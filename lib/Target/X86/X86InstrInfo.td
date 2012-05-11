@@ -866,6 +866,7 @@ def Not16BitMode : Predicate<"!Subtarget->is16Bit()">,
                              AssemblerPredicate<"!Mode16Bit", "Not 16-bit mode">;
 def In32BitMode  : Predicate<"Subtarget->is32Bit()">,
                              AssemblerPredicate<"Mode32Bit", "32-bit mode">;
+def Is64BitILP32 : Predicate<"Subtarget->isTarget64BitILP32()">;
 def IsWin64      : Predicate<"Subtarget->isTargetWin64()">;
 def NotWin64     : Predicate<"!Subtarget->isTargetWin64()">;
 def NotWin64WithoutFP : Predicate<"!Subtarget->isTargetWin64() ||"

@@ -1980,7 +1980,9 @@ Value *X86TargetLowering::getIRStackGuard(IRBuilder<> &IRB) const {
 
   // %fs:0x28, unless we're using a Kernel code model, in which case it's %gs:
   // %gs:0x14 on i386
-  unsigned Offset = (Subtarget.is64Bit()) ? 0x28 : 0x14;
+  unsigned Offset = (Subtarget.is64Bit()
+                     ? (Subtarget.isTarget64BitILP32() ? 0x18 : 0x28)
+                     : 0x14);
   unsigned AddressSpace = getAddressSpace();
   return ConstantExpr::getIntToPtr(
       ConstantInt::get(Type::getInt32Ty(IRB.getContext()), Offset),
@@ -13368,7 +13370,7 @@ X86TargetLowering::LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const {
 
     // And our return value (tls address) is in the standard call return value
     // location.
-    unsigned Reg = Subtarget.is64Bit() ? X86::RAX : X86::EAX;
+    unsigned Reg = Subtarget.isTarget64BitLP64() ? X86::RAX : X86::EAX;
     return DAG.getCopyFromReg(Chain, DL, Reg, PtrVT, Chain.getValue(1));
   }
 
@@ -17308,8 +17310,8 @@ static SDValue LowerVACOPY(SDValue Op, const X86Subtarget &Subtarget,
   SDLoc DL(Op);
 
   return DAG.getMemcpy(Chain, DL, DstPtr, SrcPtr,
-                       DAG.getIntPtrConstant(24, DL), 8, /*isVolatile*/false,
-                       false, false,
+                       DAG.getIntPtrConstant(Subtarget.isTarget64BitILP32() ? 16 : 24, DL),
+		       8, /*isVolatile*/false, false, false,
                        MachinePointerInfo(DstSV), MachinePointerInfo(SrcSV));
 }
 
@@ -19093,51 +19095,59 @@ SDValue X86TargetLowering::LowerINIT_TRAMPOLINE(SDValue Op,
 
     // Large code-model.
     const unsigned char JMP64r  = 0xFF; // 64-bit jmp through register opcode.
-    const unsigned char MOV64ri = 0xB8; // X86::MOV64ri opcode.
+    const unsigned char MOVri = 0xB8; // X86::MOV{32|64}ri opcode.
 
     const unsigned char N86R10 = TRI->getEncodingValue(X86::R10) & 0x7;
     const unsigned char N86R11 = TRI->getEncodingValue(X86::R11) & 0x7;
 
-    const unsigned char REX_WB = 0x40 | 0x08 | 0x01; // REX prefix
+    // REX prefix with REX.B and/or REX.W
+    const unsigned char REX_WB = 0x40 | 0x01 |
+                                 (Subtarget.isTarget64BitILP32() ? 0 : 0x08);
+
+    EVT PtrTy = getPointerTy(DAG.getDataLayout());
 
     // Load the pointer to the nested function into R11.
-    unsigned OpCode = ((MOV64ri | N86R11) << 8) | REX_WB; // movabsq r11
+    unsigned OpCode = ((MOVri | N86R11) << 8) | REX_WB; // movabs{q} r11{d}
     SDValue Addr = Trmp;
     OutChains[0] = DAG.getStore(Root, dl, DAG.getConstant(OpCode, dl, MVT::i16),
                                 Addr, MachinePointerInfo(TrmpAddr));
-
-    Addr = DAG.getNode(ISD::ADD, dl, MVT::i64, Trmp,
-                       DAG.getConstant(2, dl, MVT::i64));
+    Addr = DAG.getNode(ISD::ADD, dl, PtrTy, Trmp,
+                       DAG.getConstant(2, dl, PtrTy));
     OutChains[1] =
         DAG.getStore(Root, dl, FPtr, Addr, MachinePointerInfo(TrmpAddr, 2),
                      /* Alignment = */ 2);
+    const unsigned int PointerSize = PtrTy.getStoreSize();
+    unsigned Offset = 2 + PointerSize;
 
     // Load the 'nest' parameter value into R10.
     // R10 is specified in X86CallingConv.td
-    OpCode = ((MOV64ri | N86R10) << 8) | REX_WB; // movabsq r10
-    Addr = DAG.getNode(ISD::ADD, dl, MVT::i64, Trmp,
-                       DAG.getConstant(10, dl, MVT::i64));
+    OpCode = ((MOVri | N86R10) << 8) | REX_WB; // movabs{q} r10{d}
+    Addr = DAG.getNode(ISD::ADD, dl, PtrTy, Trmp,
+                       DAG.getConstant(Offset, dl, PtrTy));
     OutChains[2] = DAG.getStore(Root, dl, DAG.getConstant(OpCode, dl, MVT::i16),
-                                Addr, MachinePointerInfo(TrmpAddr, 10));
+                                Addr, MachinePointerInfo(TrmpAddr, Offset));
+    Offset += 2;
 
-    Addr = DAG.getNode(ISD::ADD, dl, MVT::i64, Trmp,
-                       DAG.getConstant(12, dl, MVT::i64));
+    Addr = DAG.getNode(ISD::ADD, dl, PtrTy, Trmp,
+                       DAG.getConstant(Offset, dl, PtrTy));
     OutChains[3] =
-        DAG.getStore(Root, dl, Nest, Addr, MachinePointerInfo(TrmpAddr, 12),
+        DAG.getStore(Root, dl, Nest, Addr, MachinePointerInfo(TrmpAddr, Offset),
                      /* Alignment = */ 2);
+    Offset += PointerSize;
 
     // Jump to the nested function.
     OpCode = (JMP64r << 8) | REX_WB; // jmpq *...
-    Addr = DAG.getNode(ISD::ADD, dl, MVT::i64, Trmp,
-                       DAG.getConstant(20, dl, MVT::i64));
+    Addr = DAG.getNode(ISD::ADD, dl, PtrTy, Trmp,
+                       DAG.getConstant(Offset, dl, PtrTy));
     OutChains[4] = DAG.getStore(Root, dl, DAG.getConstant(OpCode, dl, MVT::i16),
-                                Addr, MachinePointerInfo(TrmpAddr, 20));
+                                Addr, MachinePointerInfo(TrmpAddr, Offset));
+    Offset += 2;
 
     unsigned char ModRM = N86R11 | (4 << 3) | (3 << 6); // ...r11
-    Addr = DAG.getNode(ISD::ADD, dl, MVT::i64, Trmp,
-                       DAG.getConstant(22, dl, MVT::i64));
+    Addr = DAG.getNode(ISD::ADD, dl, PtrTy, Trmp,
+                       DAG.getConstant(Offset, dl, PtrTy));
     OutChains[5] = DAG.getStore(Root, dl, DAG.getConstant(ModRM, dl, MVT::i8),
-                                Addr, MachinePointerInfo(TrmpAddr, 22));
+                                Addr, MachinePointerInfo(TrmpAddr, Offset));
 
     return DAG.getNode(ISD::TokenFactor, dl, MVT::Other, OutChains);
   } else {
@@ -23036,8 +23046,11 @@ static MachineBasicBlock *emitMonitor(MachineInstr &MI, MachineBasicBlock *BB,
   DebugLoc dl = MI.getDebugLoc();
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   // Address into RAX/EAX, other two args into ECX, EDX.
-  unsigned MemOpc = Subtarget.is64Bit() ? X86::LEA64r : X86::LEA32r;
-  unsigned MemReg = Subtarget.is64Bit() ? X86::RAX : X86::EAX;
+  unsigned MemOpc = Subtarget.is64Bit()
+                    ? (Subtarget.isTarget64BitILP32() ? X86::LEA64_32r
+                                                       : X86::LEA64r)
+                    : X86::LEA32r;
+  unsigned MemReg = Subtarget.isTarget64BitLP64() ? X86::RAX : X86::EAX;
   MachineInstrBuilder MIB = BuildMI(*BB, MI, dl, TII->get(MemOpc), MemReg);
   for (int i = 0; i < X86::AddrNumOperands; ++i)
     MIB.addOperand(MI.getOperand(i));
@@ -23090,7 +23103,7 @@ X86TargetLowering::EmitVAARG64WithCustomInserter(MachineInstr &MI,
   // Machine Information
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &MRI = MBB->getParent()->getRegInfo();
-  const TargetRegisterClass *AddrRegClass = getRegClassFor(MVT::i64);
+  const TargetRegisterClass *AddrRegClass = getRegClassFor(getPointerTy(MBB->getParent()->getDataLayout()));
   const TargetRegisterClass *OffsetRegClass = getRegClassFor(MVT::i32);
   DebugLoc DL = MI.getDebugLoc();
 
@@ -23202,25 +23215,33 @@ X86TargetLowering::EmitVAARG64WithCustomInserter(MachineInstr &MI,
 
     // Read the reg_save_area address.
     unsigned RegSaveReg = MRI.createVirtualRegister(AddrRegClass);
-    BuildMI(offsetMBB, DL, TII->get(X86::MOV64rm), RegSaveReg)
+    BuildMI(offsetMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                    ? X86::MOV32rm : X86::MOV64rm), RegSaveReg)
       .addOperand(Base)
       .addOperand(Scale)
       .addOperand(Index)
-      .addDisp(Disp, 16)
+      .addDisp(Disp, Subtarget.isTarget64BitILP32() ? 12 : 16)
       .addOperand(Segment)
       .setMemRefs(MMOBegin, MMOEnd);
 
-    // Zero-extend the offset
-    unsigned OffsetReg64 = MRI.createVirtualRegister(AddrRegClass);
-      BuildMI(offsetMBB, DL, TII->get(X86::SUBREG_TO_REG), OffsetReg64)
-        .addImm(0)
-        .addReg(OffsetReg)
-        .addImm(X86::sub_32bit);
+    if (Subtarget.isTarget64BitLP64()) {
+      // Zero-extend the offset
+      unsigned OffsetReg64 = MRI.createVirtualRegister(AddrRegClass);
+        BuildMI(offsetMBB, DL, TII->get(X86::SUBREG_TO_REG), OffsetReg64)
+          .addImm(0)
+          .addReg(OffsetReg)
+          .addImm(X86::sub_32bit);
 
-    // Add the offset to the reg_save_area to get the final address.
-    BuildMI(offsetMBB, DL, TII->get(X86::ADD64rr), OffsetDestReg)
-      .addReg(OffsetReg64)
-      .addReg(RegSaveReg);
+      // Add the offset to the reg_save_area to get the final address.
+      BuildMI(offsetMBB, DL, TII->get(X86::ADD64rr), OffsetDestReg)
+        .addReg(OffsetReg64)
+        .addReg(RegSaveReg);
+    } else {
+      // Add the offset to the reg_save_area to get the final address.
+      BuildMI(offsetMBB, DL, TII->get(X86::ADD32rr), OffsetDestReg)
+        .addReg(OffsetReg)
+        .addReg(RegSaveReg);
+    }
 
     // Compute the offset for the next argument
     unsigned NextOffsetReg = MRI.createVirtualRegister(OffsetRegClass);
@@ -23249,7 +23270,9 @@ X86TargetLowering::EmitVAARG64WithCustomInserter(MachineInstr &MI,
 
   // Load the overflow_area address into a register.
   unsigned OverflowAddrReg = MRI.createVirtualRegister(AddrRegClass);
-  BuildMI(overflowMBB, DL, TII->get(X86::MOV64rm), OverflowAddrReg)
+  BuildMI(overflowMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                    ? X86::MOV32rm
+                                    : X86::MOV64rm), OverflowAddrReg)
     .addOperand(Base)
     .addOperand(Scale)
     .addOperand(Index)
@@ -23265,11 +23288,15 @@ X86TargetLowering::EmitVAARG64WithCustomInserter(MachineInstr &MI,
     unsigned TmpReg = MRI.createVirtualRegister(AddrRegClass);
 
     // aligned_addr = (addr + (align-1)) & ~(align-1)
-    BuildMI(overflowMBB, DL, TII->get(X86::ADD64ri32), TmpReg)
+    BuildMI(overflowMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                      ? X86::ADD32ri
+                                      : X86::ADD64ri32), TmpReg)
       .addReg(OverflowAddrReg)
       .addImm(Align-1);
 
-    BuildMI(overflowMBB, DL, TII->get(X86::AND64ri32), OverflowDestReg)
+    BuildMI(overflowMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                      ? X86::AND32ri
+                                      : X86::AND64ri32), OverflowDestReg)
       .addReg(TmpReg)
       .addImm(~(uint64_t)(Align-1));
   } else {
@@ -23280,12 +23307,15 @@ X86TargetLowering::EmitVAARG64WithCustomInserter(MachineInstr &MI,
   // Compute the next overflow address after this argument.
   // (the overflow address should be kept 8-byte aligned)
   unsigned NextAddrReg = MRI.createVirtualRegister(AddrRegClass);
-  BuildMI(overflowMBB, DL, TII->get(X86::ADD64ri32), NextAddrReg)
+  BuildMI(overflowMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                    ? X86::ADD32ri
+                                    : X86::ADD64ri32), NextAddrReg)
     .addReg(OverflowDestReg)
     .addImm(ArgSizeA8);
 
   // Store the new overflow address.
-  BuildMI(overflowMBB, DL, TII->get(X86::MOV64mr))
+  BuildMI(overflowMBB, DL, TII->get(Subtarget.isTarget64BitILP32()
+                                    ? X86::MOV32mr : X86::MOV64mr))
     .addOperand(Base)
     .addOperand(Scale)
     .addOperand(Index)

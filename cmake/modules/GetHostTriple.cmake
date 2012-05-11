@@ -16,10 +16,14 @@ function( get_host_triple var )
     endif()
   else( MSVC )
     set(config_guess ${LLVM_MAIN_SRC_DIR}/cmake/config.guess)
+    set(OLD_ENV_CC "$ENV{CC}")
+    # Propagate the 1st argument into subprocess as well.
+    set(ENV{CC} "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ARG1}")
     execute_process(COMMAND sh ${config_guess}
       RESULT_VARIABLE TT_RV
       OUTPUT_VARIABLE TT_OUT
       OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(ENV{CC} "${OLD_ENV_CC}")
     if( NOT TT_RV EQUAL 0 )
       message(FATAL_ERROR "Failed to execute ${config_guess}")
     endif( NOT TT_RV EQUAL 0 )

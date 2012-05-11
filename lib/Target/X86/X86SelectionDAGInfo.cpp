@@ -121,7 +121,7 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemset(
       ValReg = X86::EAX;
       Val = (Val << 8)  | Val;
       Val = (Val << 16) | Val;
-      if (Subtarget.is64Bit() && ((Align & 0x7) == 0)) {  // QWORD aligned
+      if (Subtarget.isTarget64BitLP64() && ((Align & 0x7) == 0)) {  // QWORD aligned
         AVT = MVT::i64;
         ValReg = X86::RAX;
         Val = (Val << 32) | Val;
@@ -150,11 +150,15 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemset(
     InFlag = Chain.getValue(1);
   }
 
-  Chain = DAG.getCopyToReg(Chain, dl, Subtarget.is64Bit() ? X86::RCX : X86::ECX,
-                           Count, InFlag);
+  Chain  = DAG.getCopyToReg(Chain, dl,
+                            Subtarget.isTarget64BitLP64() ? X86::RCX :
+                                                            X86::ECX,
+                            Count, InFlag);
   InFlag = Chain.getValue(1);
-  Chain = DAG.getCopyToReg(Chain, dl, Subtarget.is64Bit() ? X86::RDI : X86::EDI,
-                           Dst, InFlag);
+  Chain  = DAG.getCopyToReg(Chain, dl,
+                            Subtarget.isTarget64BitLP64() ? X86::RDI :
+                                                            X86::EDI,
+                            Dst, InFlag);
   InFlag = Chain.getValue(1);
 
   SDVTList Tys = DAG.getVTList(MVT::Other, MVT::Glue);
@@ -236,7 +240,7 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemcpy(
     AVT = MVT::i32;
   else
     // QWORD aligned
-    AVT = Subtarget.is64Bit() ? MVT::i64 : MVT::i32;
+    AVT = DAG.getTargetLoweringInfo().getPointerTy(DAG.getDataLayout());
 
   unsigned UBytes = AVT.getSizeInBits() / 8;
   unsigned CountVal = SizeVal / UBytes;
@@ -244,13 +248,19 @@ SDValue X86SelectionDAGInfo::EmitTargetCodeForMemcpy(
   unsigned BytesLeft = SizeVal % UBytes;
 
   SDValue InFlag;
-  Chain = DAG.getCopyToReg(Chain, dl, Subtarget.is64Bit() ? X86::RCX : X86::ECX,
+  Chain = DAG.getCopyToReg(Chain, dl,
+                           Subtarget.isTarget64BitLP64() ? X86::RCX :
+                                                           X86::ECX,
                            Count, InFlag);
   InFlag = Chain.getValue(1);
-  Chain = DAG.getCopyToReg(Chain, dl, Subtarget.is64Bit() ? X86::RDI : X86::EDI,
+  Chain = DAG.getCopyToReg(Chain, dl,
+                           Subtarget.isTarget64BitLP64() ? X86::RDI :
+                                                           X86::EDI,
                            Dst, InFlag);
   InFlag = Chain.getValue(1);
-  Chain = DAG.getCopyToReg(Chain, dl, Subtarget.is64Bit() ? X86::RSI : X86::ESI,
+  Chain = DAG.getCopyToReg(Chain, dl,
+                           Subtarget.isTarget64BitLP64() ? X86::RSI :
+                                                           X86::ESI,
                            Src, InFlag);
   InFlag = Chain.getValue(1);
 

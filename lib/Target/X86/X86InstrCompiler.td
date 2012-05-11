@@ -487,6 +487,25 @@ def TLS_base_addr64 : I<0, Pseudo, (outs), (ins i64mem:$sym),
                   Requires<[In64BitMode]>;
 }
 
+// All calls clobber the non-callee saved registers. ESP is marked as
+// a use to prevent stack-pointer assignments that appear immediately
+// before calls from potentially appearing dead.
+let Defs = [EAX, ECX, EDX, ESI, EDI, R8D, R9D, R10D, R11D,
+            FP0, FP1, FP2, FP3, FP4, FP5, FP6, ST0, ST1,
+            MM0, MM1, MM2, MM3, MM4, MM5, MM6, MM7,
+            XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7,
+            XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, XMM15, EFLAGS],
+    Uses = [ESP] in {
+def TLS_addrX32 : I<0, Pseudo, (outs), (ins i32mem:$sym),
+                   "# TLS_addrx32",
+                  [(X86tlsaddr tls32addr:$sym)]>,
+                  Requires<[Is64BitILP32]>;
+def TLS_base_addrX32 : I<0, Pseudo, (outs), (ins i32mem:$sym),
+                   "# TLS_base_addrX32",
+                  [(X86tlsbaseaddr tls32baseaddr:$sym)]>,
+                  Requires<[Is64BitILP32]>;
+}
+
 // Darwin TLS Support
 // For i386, the address of the thunk is passed on the stack, on return the
 // address of the variable is in %eax.  %ecx is trashed during the function
@@ -1122,6 +1141,8 @@ def : Pat<(i64 (X86Wrapper tglobaltlsaddr :$dst)),
 // This corresponds to add $foo@tpoff, %rax
 def : Pat<(add GR64:$src1, (X86Wrapper tglobaltlsaddr :$dst)),
           (ADD64ri32 GR64:$src1, tglobaltlsaddr :$dst)>;
+def : Pat<(add GR32:$src1, (X86Wrapper tglobaltlsaddr :$dst)),
+          (ADD32ri GR32:$src1, tglobaltlsaddr :$dst)>, Requires<[Is64BitILP32]>;
 
 
 // Direct PC relative function call for small code model. 32-bit displacement

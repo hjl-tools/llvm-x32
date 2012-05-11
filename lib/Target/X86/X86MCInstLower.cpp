@@ -1273,8 +1273,10 @@ void X86AsmPrinter::EmitInstruction(const MachineInstr *MI) {
     break;
 
   case X86::TLS_addr32:
+  case X86::TLS_addrX32:
   case X86::TLS_addr64:
   case X86::TLS_base_addr32:
+  case X86::TLS_base_addrX32:
   case X86::TLS_base_addr64:
     return LowerTlsAddr(MCInstLowering, *MI);
 
