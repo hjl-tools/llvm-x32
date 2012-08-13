@@ -1,7 +1,7 @@
-; RUN: llc < %s -O3 -march=x86-64 -mcpu=core2 | FileCheck %s -check-prefix=X64
 ; RUN: llc < %s -O3 -march=x86 -mcpu=core2 | FileCheck %s -check-prefix=X32
 ; RUN: llc < %s -O3 -march=x86-64 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X64
 ; RUN: llc < %s -O3 -march=x86 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X32
+; RUN: llc < %s -O3 -mtriple=x86_64-gnux32 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X32ABI
 
 ; @simple is the most basic chain of address induction variables. Chaining
 ; saves at least one register and avoids complex addressing and setup
@@ -16,6 +16,16 @@
 ; X64: %loop
 ; no complex address modes
 ; X64-NOT: (%{{[^)]+}},%{{[^)]+}},
+;
+; X32ABI: @simple
+; %x * 4
+; X32ABI: shll $2
+; no other address computation in the preheader
+; X32ABI-NEXT: xorl
+; X32ABI-NEXT: .p2align
+; X32ABI: %loop
+; no complex address modes
+; X32ABI-NOT: (%{{[^)]+}},%{{[^)]+}},
 ;
 ; X32: @simple
 ; no expensive address computation in the preheader
@@ -56,6 +66,14 @@ exit:
 ; X64: %loop
 ; complex address modes
 ; X64: (%{{[^)]+}},%{{[^)]+}},
+;
+; X32ABI: @user
+; X32ABI: shll $4
+; X32ABI: lea
+; X32ABI: lea
+; X32ABI: %loop
+; complex address modes
+; X32ABI: (%{{[^)]+}},%{{[^)]+}},
 ;
 ; X32: @user
 ; expensive address computation in the preheader
@@ -99,6 +117,15 @@ exit:
 ; We currently don't handle this on X64 because the sexts cause
 ; strange increment expressions like this:
 ; IV + ((sext i32 (2 * %s) to i64) + (-1 * (sext i32 %s to i64)))
+;
+; X32ABI: extrastride:
+; no spills in the preheader
+; X32ABI-NOT: mov{{.*}}(%esp){{$}}
+; X32ABI: %for.body{{$}}
+; no complex address modes
+; X32ABI-NOT: (%{{[^)]+}},%{{[^)]+}},
+; no reloads
+; X32ABI-NOT: (%esp)
 ;
 ; X32: extrastride:
 ; no spills in the preheader
@@ -163,6 +190,9 @@ for.end:                                          ; preds = %for.body, %entry
 ;
 ; X64: foldedidx:
 ; X64: movzbl -3(
+;
+; X32ABI: foldedidx:
+; X32ABI: movzbl -3(
 ;
 ; X32: foldedidx:
 ; X32: movzbl -3(
@@ -236,6 +266,16 @@ for.end:                                          ; preds = %for.body
 ; X64-NEXT: leal 3(
 ; X64-NEXT: movl %{{.*}},4)
 ;
+; X32ABI: @multioper
+; X32ABI: %for.body
+; X32ABI: movl %{{.*}},4)
+; X32ABI-NEXT: leal 1(
+; X32ABI-NEXT: movl %{{.*}},4)
+; X32ABI-NEXT: leal 2(
+; X32ABI-NEXT: movl %{{.*}},4)
+; X32ABI-NEXT: leal 3(
+; X32ABI-NEXT: movl %{{.*}},4)
+;
 ; X32: @multioper
 ; X32: %for.body
 ; X32: movl %{{.*}},4)
@@ -274,6 +314,11 @@ exit:
 ; @testCmpZero has a ICmpZero LSR use that should not be hidden from
 ; LSR. Profitable chains should have more than one nonzero increment
 ; anyway.
+;
+; X32ABI: @testCmpZero
+; X32ABI: %for.body82.us
+; X32ABI: dec
+; X32ABI: jne
 ;
 ; X32: @testCmpZero
 ; X32: %for.body82.us

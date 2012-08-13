@@ -1,4 +1,5 @@
-; RUN: llc < %s -march=x86-64 | FileCheck %s
+; RUN: llc < %s -mtriple=x86_64 | FileCheck %s
+; RUN: llc < %s -mtriple=x86_64-gnux32 | FileCheck %s
 
 declare void @bar()
 
@@ -16,7 +17,7 @@ if.then:
 if.end:
   ret void
 ; CHECK-LABEL: test1:
-; CHECK: cmpb $47, (%{{rdi|rcx}})
+; CHECK: cmpb $47, (%{{rdi|edi|rcx}})
 }
 
 define void @test2(i32 %X) nounwind minsize {

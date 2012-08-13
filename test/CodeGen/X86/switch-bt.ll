@@ -1,4 +1,5 @@
-; RUN: llc -march=x86-64 -asm-verbose=false < %s -jump-table-density=40 | FileCheck %s
+; RUN: llc -mtriple=x86_64 -asm-verbose=false < %s -jump-table-density=40 | FileCheck %s
+; RUN: llc -mtriple=x86_64-gnux32 -asm-verbose=false < %s -jump-table-density=40 | FileCheck %s -check-prefix=X32ABI
 
 ; This switch should use bit tests, and the third bit test case is just
 ; testing for one possible value, so it doesn't need a bt.
@@ -56,11 +57,18 @@ define void @test2(i32 %x) nounwind ssp {
 ; CHECK-LABEL: test2:
 ; CHECK: cmpl $6
 ; CHECK: ja
+; X32ABI: test2:
+; X32ABI: cmpl $6
+; X32ABI: ja
 
 ; CHECK-NEXT: movl $91
 ; CHECK-NOT: movl
 ; CHECK-NEXT: btl
 ; CHECK-NEXT: jae
+; X32ABI-NEXT: movl $91
+; X32ABI-NOT: movl
+; X32ABI-NEXT: btl
+; X32ABI-NEXT: jae
 entry:
   switch i32 %x, label %if.end [
     i32 6, label %if.then
@@ -86,6 +94,11 @@ define void @test3(i32 %x) nounwind {
 ; CHECK: ja
 ; CHECK: cmpl $4
 ; CHECK: je
+; X32ABI: test3:
+; X32ABI: cmpl $5
+; X32ABI: ja
+; X32ABI: cmpl $4
+; X32ABI: je
   switch i32 %x, label %if.end [
     i32 0, label %if.then
     i32 1, label %if.then

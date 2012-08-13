@@ -1,4 +1,5 @@
-; RUN: llc < %s -march=x86-64 | FileCheck %s
+; RUN: llc < %s -mtriple=x86_64 | FileCheck %s
+; RUN: llc < %s -mtriple=x86_64-gnux32 | FileCheck %s -check-prefix=X32ABI
 
 %struct.obj = type { i64 }
 
@@ -7,6 +8,8 @@ define void @_Z7releaseP3obj(%struct.obj* nocapture %o) nounwind uwtable ssp {
 entry:
 ; CHECK: decq	(%{{rdi|rcx}})
 ; CHECK-NEXT: je
+; X32ABI: decq	(%{{edi|ecx}})
+; X32ABI-NEXT: je
   %refcnt = getelementptr inbounds %struct.obj, %struct.obj* %o, i64 0, i32 0
   %0 = load i64, i64* %refcnt, align 8
   %dec = add i64 %0, -1
@@ -29,10 +32,13 @@ return:                                           ; preds = %entry, %if.end
 @b = common global i32 0, align 4
 
 ; CHECK: test
+; X32ABI: test
 define i32 @test() nounwind uwtable ssp {
 entry:
 ; CHECK: decq
 ; CHECK-NOT: decq
+; X32ABI: decq
+; X32ABI-NOT: decq
 %0 = load i64, i64* @c, align 8
 %dec.i = add nsw i64 %0, -1
 store i64 %dec.i, i64* @c, align 8
@@ -44,9 +50,11 @@ ret i32 0
 }
 
 ; CHECK: test2
+; X32ABI: test2
 define i32 @test2() nounwind uwtable ssp {
 entry:
 ; CHECK-NOT: decq ({{.*}})
+; X32ABI-NOT: decq ({{.*}})
 %0 = load i64, i64* @c, align 8
 %dec.i = add nsw i64 %0, -1
 store i64 %dec.i, i64* @c, align 8
@@ -66,13 +74,16 @@ declare void @free(i8* nocapture) nounwind
 declare void @other(%struct.obj2* ) nounwind;
 
 ; CHECK: example_dec
+; X32ABI: example_dec
 define void @example_dec(%struct.obj2* %o) nounwind uwtable ssp {
 ; 64 bit dec
 entry:
   %s64 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 0
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %0 = load i64, i64* %s64, align 8
 ; CHECK: decq ({{.*}})
+; X32ABI: decq ({{.*}})
   %dec = add i64 %0, -1
   store i64 %dec, i64* %s64, align 8
   %tobool = icmp eq i64 %dec, 0
@@ -82,8 +93,10 @@ entry:
 if.end:
   %s32 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 1
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %1 = load i32, i32* %s32, align 4
 ; CHECK: decl {{[0-9][0-9]*}}({{.*}})
+; X32ABI: decl {{[0-9][0-9]*}}({{.*}})
   %dec1 = add i32 %1, -1
   store i32 %dec1, i32* %s32, align 4
   %tobool2 = icmp eq i32 %dec1, 0
@@ -93,8 +106,10 @@ if.end:
 if.end1:
   %s16 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 2
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %2 = load i16, i16* %s16, align 2
 ; CHECK: decw {{[0-9][0-9]*}}({{.*}})
+; X32ABI: decw {{[0-9][0-9]*}}({{.*}})
   %dec2 = add i16 %2, -1
   store i16 %dec2, i16* %s16, align 2
   %tobool3 = icmp eq i16 %dec2, 0
@@ -104,8 +119,10 @@ if.end1:
 if.end2:
   %s8 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 3
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %3 = load i8, i8* %s8
 ; CHECK: decb {{[0-9][0-9]*}}({{.*}})
+; X32ABI: decb {{[0-9][0-9]*}}({{.*}})
   %dec3 = add i8 %3, -1
   store i8 %dec3, i8* %s8
   %tobool4 = icmp eq i8 %dec3, 0
@@ -120,13 +137,16 @@ return:                                           ; preds = %if.end4, %if.end, %
 }
 
 ; CHECK: example_inc
+; X32ABI: example_inc
 define void @example_inc(%struct.obj2* %o) nounwind uwtable ssp {
 ; 64 bit inc
 entry:
   %s64 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 0
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %0 = load i64, i64* %s64, align 8
 ; CHECK: incq ({{.*}})
+; X32ABI: incq ({{.*}})
   %inc = add i64 %0, 1
   store i64 %inc, i64* %s64, align 8
   %tobool = icmp eq i64 %inc, 0
@@ -136,6 +156,7 @@ entry:
 if.end:
   %s32 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 1
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %1 = load i32, i32* %s32, align 4
 ; CHECK: incl {{[0-9][0-9]*}}({{.*}})
   %inc1 = add i32 %1, 1
@@ -147,8 +168,10 @@ if.end:
 if.end1:
   %s16 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 2
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %2 = load i16, i16* %s16, align 2
 ; CHECK: incw {{[0-9][0-9]*}}({{.*}})
+; X32ABI: incw {{[0-9][0-9]*}}({{.*}})
   %inc2 = add i16 %2, 1
   store i16 %inc2, i16* %s16, align 2
   %tobool3 = icmp eq i16 %inc2, 0
@@ -158,8 +181,10 @@ if.end1:
 if.end2:
   %s8 = getelementptr inbounds %struct.obj2, %struct.obj2* %o, i64 0, i32 3
 ; CHECK-NOT: load 
+; X32ABI-NOT: load 
   %3 = load i8, i8* %s8
 ; CHECK: incb {{[0-9][0-9]*}}({{.*}})
+; X32ABI: incb {{[0-9][0-9]*}}({{.*}})
   %inc3 = add i8 %3, 1
   store i8 %inc3, i8* %s8
   %tobool4 = icmp eq i8 %inc3, 0
@@ -180,7 +205,9 @@ return:
 define void @test3() nounwind ssp {
 entry:
 ; CHECK-LABEL: test3:
+; X32ABI-LABEL: test3:
 ; CHECK: decq 16(%rax)
+; X32ABI: decq 16(%eax)
   %0 = load i64*, i64** @foo, align 8
   %arrayidx = getelementptr inbounds i64, i64* %0, i64 2
   %1 = load i64, i64* %arrayidx, align 8

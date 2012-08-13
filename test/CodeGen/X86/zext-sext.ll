@@ -1,4 +1,5 @@
 ; RUN: llc < %s -mtriple=x86_64-linux-gnu -mcpu=atom | FileCheck %s
+; RUN: llc < %s -mtriple=x86_64-linux-gnux32 -mcpu=atom | FileCheck %s
 ; <rdar://problem/8006248>
 
 ; This randomly started passing after an unrelated change, if it fails again it

@@ -1,4 +1,5 @@
-; RUN: llc -march=x86-64 < %s | FileCheck %s
+; RUN: llc -mtriple=x86_64 < %s | FileCheck %s
+; RUN: llc -mtriple=x86_64-gnux32 < %s | FileCheck %s -check-prefix=X32ABI
 ; rdar://9081094
 
 ; LSR shouldn't create lots of redundant address computations.
@@ -15,6 +16,11 @@ define void @main_bb.i() nounwind {
 ; CHECK: addq $-16,
 ; CHECK-NOT: ret
 ; CHECK: ret
+; X32ABI: main_bb.i:
+; X32ABI-NOT: ret
+; X32ABI: addl $-16,
+; X32ABI-NOT: ret
+; X32ABI: ret
 
 bb:
   br label %bb38

@@ -1,7 +1,11 @@
-; RUN: llc < %s -march=x86-64 > %t
+; RUN: llc < %s -mtriple=x86_64 > %t
 ; RUN: grep and %t | count 6
 ; RUN: grep movzb %t | count 6
 ; RUN: grep sar %t | count 12
+; RUN: llc < %s -mtriple=x86_64-gnux32 > %t
+; RUN: grep and %t | count 6
+; RUN: grep movzb %t | count 6
+; RUN: grep shr %t | count 12
 
 ; Don't optimize away zext-inreg and sext-inreg on the loop induction
 ; variable, because it isn't safe to do so in these cases.

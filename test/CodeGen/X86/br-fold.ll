@@ -1,5 +1,6 @@
 ; RUN: llc -mtriple=x86_64-apple-darwin < %s | FileCheck  -check-prefix=X64_DARWIN %s
 ; RUN: llc -mtriple=x86_64-pc-linux < %s | FileCheck  -check-prefix=X64_LINUX %s
+; RUN: llc -mtriple=x86_64-pc-linux-gnux32 < %s | FileCheck %s -check-prefix=X32ABI
 ; RUN: llc -mtriple=x86_64-pc-windows < %s | FileCheck  -check-prefix=X64_WINDOWS %s
 ; RUN: llc -mtriple=x86_64-pc-windows-gnu < %s | FileCheck  -check-prefix=X64_WINDOWS_GNU %s
 ; RUN: llc -mtriple=x86_64-scei-ps4 < %s | FileCheck -check-prefix=PS4 %s
@@ -11,6 +12,10 @@
 ; X64_LINUX: orq %rax, %rcx
 ; X64_LINUX-NEXT: jne
 ; X64_LINUX-NEXT: %bb8.i329
+
+; X32ABI: orl %eax, %ecx
+; X32ABI-NEXT: jne
+; X32ABI-NEXT: %bb8.i329
 
 ; X64_WINDOWS: orq %rax, %rcx
 ; X64_WINDOWS-NEXT: ud2

@@ -1,4 +1,5 @@
-; RUN: llc < %s -O3 -march=x86-64 -mcpu=core2 | FileCheck %s
+; RUN: llc < %s -O3 -mtriple=x86_64 -mcpu=core2 | FileCheck %s
+; RUN: llc < %s -O3 -mtriple=x86_64-gnux32 -mcpu=core2 | FileCheck %s
 
 declare i1 @check() nounwind
 declare i1 @foo(i8*, i8*, i8*) nounwind
@@ -98,7 +99,7 @@ while.end:                                        ; preds = %entry
 ; CHECK: @test3
 ; CHECK: %for.body3.lr.ph.us.i.loopexit
 ; CHECK-NEXT: in Loop: Header
-; CHECK-NEXT: incq
+; CHECK-NEXT: inc{{q|l}}
 ; CHECK-NEXT: %for.body3.us.i
 ; CHECK-NEXT: Inner Loop
 ; CHECK: testb
