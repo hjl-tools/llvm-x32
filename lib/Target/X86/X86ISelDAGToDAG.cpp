@@ -1693,11 +1693,11 @@ bool X86DAGToDAGISel::selectTLSADDRAddr(SDValue N, SDValue &Base,
   AM.Base_Reg = CurDAG->getRegister(0, N.getValueType());
   AM.SymbolFlags = GA->getTargetFlags();
 
-  if (N.getValueType() == MVT::i32) {
+  if (Subtarget->is32Bit()) {
     AM.Scale = 1;
     AM.IndexReg = CurDAG->getRegister(X86::EBX, MVT::i32);
   } else {
-    AM.IndexReg = CurDAG->getRegister(0, MVT::i64);
+    AM.IndexReg = CurDAG->getRegister(0, N.getValueType());
   }
 
   getAddressOperands(AM, SDLoc(N), Base, Scale, Index, Disp, Segment);
