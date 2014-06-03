@@ -61,6 +61,8 @@ namespace {
     unsigned Scale;
     SDValue IndexReg;
     int32_t Disp;
+    // The GNU TLS model: load fs:0 -> FS segment register.
+    bool LoadFSForTLS;
     SDValue Segment;
     const GlobalValue *GV;
     const Constant *CP;
@@ -73,7 +75,7 @@ namespace {
 
     X86ISelAddressMode()
         : BaseType(RegBase), Base_FrameIndex(0), Scale(1), IndexReg(), Disp(0),
-          Segment(), GV(nullptr), CP(nullptr), BlockAddr(nullptr), ES(nullptr),
+          LoadFSForTLS(false), Segment(), GV(nullptr), CP(nullptr), BlockAddr(nullptr), ES(nullptr),
           MCSym(nullptr), JT(-1), Align(0), SymbolFlags(X86II::MO_NO_FLAG) {}
 
     bool hasSymbolicDisplacement() const {
@@ -723,6 +725,7 @@ bool X86DAGToDAGISel::matchLoadInAddress(LoadSDNode *N, X86ISelAddressMode &AM){
         AM.Segment = CurDAG->getRegister(X86::GS, MVT::i16);
         return false;
       case 257:
+        AM.LoadFSForTLS = true;
         AM.Segment = CurDAG->getRegister(X86::FS, MVT::i16);
         return false;
       // Address space 258 is not handled here, because it is not used to
@@ -1491,6 +1494,34 @@ bool X86DAGToDAGISel::selectAddr(SDNode *Parent, SDValue N, SDValue &Base,
   if (AM.BaseType == X86ISelAddressMode::RegBase) {
     if (!AM.Base_Reg.getNode())
       AM.Base_Reg = CurDAG->getRegister(0, VT);
+    else if (AM.LoadFSForTLS && Subtarget->isTarget64BitILP32()) {
+      // When %fs:disp(%base) or %fs:disp(%base,%index,scale) are used to
+      // access TLS variable XXX, %base is a negative 64-bit offset
+      // from the GOT entry loaded at the address of XXX@GOTTPOFF(%rip).
+      // Since the effective address is %fs plus the 32-bit offset of
+      // %base + %index * scale + disp zero-extended to 64 bits, we get
+      // %fs + positive offset instead of %fs + negative offset when
+      // the 32 bit negative offset is zero-extended to 64 bits.
+      //
+      // For %fs:disp(%base,%index,scale), we fold %fs into %base with
+      // "movl %fs:0,%reg; addl %reg,%base" here so that we get the
+      // effective address as the 32-bit offset of %fs + %base + %index
+      // * scale + disp zero-extended to 64 bits.
+      //
+      // X32FIXME: For %fs:disp(%base), we should avoid folding %fs into
+      // %base when %base is a 64-bit register directly loaded from
+      // xxx@GOTTPOFF(%rip).
+      Value *Ptr = Constant::getNullValue(Type::getInt8PtrTy(*CurDAG->getContext(),
+                                          257));
+      SDLoc DL(N);
+      SDValue TP = CurDAG->getLoad(VT, DL,
+                                   CurDAG->getEntryNode(),
+                                   CurDAG->getIntPtrConstant(0, DL),
+                                   MachinePointerInfo(Ptr));
+      AM.Base_Reg = CurDAG->getNode(ISD::ADD, DL, VT, TP,
+                                    AM.Base_Reg);
+      AM.Segment = CurDAG->getRegister(0, VT);
+    }
   }
 
   if (!AM.IndexReg.getNode())

@@ -60,8 +60,9 @@ public:
   X86MCInstLower(const MachineFunction &MF, X86AsmPrinter &asmprinter);
 
   Optional<MCOperand> LowerMachineOperand(const MachineInstr *MI,
-                                          const MachineOperand &MO) const;
-  void Lower(const MachineInstr *MI, MCInst &OutMI) const;
+                                          const MachineOperand &MO,
+                                          bool &Has_gottpoff) const;
+  bool Lower(const MachineInstr *MI, MCInst &OutMI) const;
 
   MCSymbol *GetSymbolFromOperand(const MachineOperand &MO) const;
   MCOperand LowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym) const;
@@ -355,7 +356,8 @@ static unsigned getRetOpcode(const X86Subtarget &Subtarget) {
 
 Optional<MCOperand>
 X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
-                                    const MachineOperand &MO) const {
+                                    const MachineOperand &MO,
+                                    bool &Has_gottpoff) const {
   switch (MO.getType()) {
   default:
     MI->dump();
@@ -367,8 +369,10 @@ X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
     return MCOperand::createReg(MO.getReg());
   case MachineOperand::MO_Immediate:
     return MCOperand::createImm(MO.getImm());
-  case MachineOperand::MO_MachineBasicBlock:
   case MachineOperand::MO_GlobalAddress:
+      if (MO.getTargetFlags() == X86II::MO_GOTTPOFF)
+        Has_gottpoff = true;
+  case MachineOperand::MO_MachineBasicBlock:
   case MachineOperand::MO_ExternalSymbol:
     return LowerSymbolOperand(MO, GetSymbolFromOperand(MO));
   case MachineOperand::MO_MCSymbol:
@@ -386,11 +390,14 @@ X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
   }
 }
 
-void X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
+bool X86MCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
   OutMI.setOpcode(MI->getOpcode());
 
+  bool Has_gottpoff = false;
+  bool Emit_REX = false;
+
   for (const MachineOperand &MO : MI->operands())
-    if (auto MaybeMCOp = LowerMachineOperand(MI, MO))
+    if (auto MaybeMCOp = LowerMachineOperand(MI, MO, Has_gottpoff))
       OutMI.addOperand(MaybeMCOp.getValue());
 
   // Handle a few special cases to eliminate operand modifiers.
@@ -628,6 +635,16 @@ ReSimplify:
     break;
   }
 
+  case X86::ADD32rm: {
+    if (Has_gottpoff && AsmPrinter.getSubtarget().isTarget64BitILP32()) {
+      // Add "rex" if "addl x@GOTTPOFF(%rip), %r32" doesn't have a REX
+      // prefix.
+      unsigned Reg = OutMI.getOperand(0).getReg();
+      Emit_REX = X86::GR32_NOREXRegClass.contains(Reg);
+    }
+    break;
+  }
+
   case X86::ADC8ri: case X86::ADC16ri: case X86::ADC32ri: case X86::ADC64ri32:
   case X86::ADD8ri: case X86::ADD16ri: case X86::ADD32ri: case X86::ADD64ri32:
   case X86::AND8ri: case X86::AND16ri: case X86::AND32ri: case X86::AND64ri32:
@@ -688,6 +705,8 @@ ReSimplify:
     SimplifyMOVSX(OutMI);
     break;
   }
+
+  return Emit_REX;
 }
 
 void X86AsmPrinter::LowerTlsAddr(X86MCInstLower &MCInstLowering,
@@ -908,6 +927,7 @@ void X86AsmPrinter::LowerFAULTING_LOAD_OP(const MachineInstr &MI,
   MCSymbol *HandlerLabel = MI.getOperand(1).getMBB()->getSymbol();
   unsigned LoadOpcode = MI.getOperand(2).getImm();
   unsigned LoadOperandsBeginIdx = 3;
+  bool Has_gottpoff = false;
 
   FM.recordFaultingOp(FaultMaps::FaultingLoad, HandlerLabel);
 
@@ -920,8 +940,10 @@ void X86AsmPrinter::LowerFAULTING_LOAD_OP(const MachineInstr &MI,
   for (auto I = MI.operands_begin() + LoadOperandsBeginIdx,
             E = MI.operands_end();
        I != E; ++I)
-    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, *I))
+    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, *I, Has_gottpoff))
       LoadMI.addOperand(MaybeOperand.getValue());
+  assert ((!Has_gottpoff || !getSubtarget().isTarget64BitILP32()) &&
+          "Unhandled GOTTPOFF relocation for x32"); (void)Has_gottpoff;
 
   OutStreamer->EmitInstruction(LoadMI, getSubtargetInfo());
 }
@@ -932,11 +954,13 @@ void X86AsmPrinter::LowerPATCHABLE_OP(const MachineInstr &MI,
 
   unsigned MinSize = MI.getOperand(0).getImm();
   unsigned Opcode = MI.getOperand(1).getImm();
+  bool Has_gottpoff = false;
 
   MCInst MCI;
   MCI.setOpcode(Opcode);
   for (auto &MO : make_range(MI.operands_begin() + 2, MI.operands_end()))
-    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, MO))
+    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, MO,
+                                                     Has_gottpoff))
       MCI.addOperand(MaybeOperand.getValue());
 
   SmallString<256> Code;
@@ -1090,10 +1114,12 @@ void X86AsmPrinter::LowerPATCHABLE_RET(const MachineInstr &MI,
   OutStreamer->EmitCodeAlignment(2);
   OutStreamer->EmitLabel(CurSled);
   unsigned OpCode = MI.getOperand(0).getImm();
+  bool Has_gottpoff = false;
   MCInst Ret;
   Ret.setOpcode(OpCode);
   for (auto &MO : make_range(MI.operands_begin() + 1, MI.operands_end()))
-    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, MO))
+    if (auto MaybeOperand = MCIL.LowerMachineOperand(&MI, MO,
+                                                     Has_gottpoff))
       Ret.addOperand(MaybeOperand.getValue());
   OutStreamer->EmitInstruction(Ret, getSubtargetInfo());
   EmitNops(*OutStreamer, 10, Subtarget->is64Bit(), getSubtargetInfo());
@@ -1681,13 +1707,14 @@ void X86AsmPrinter::EmitInstruction(const MachineInstr *MI) {
   }
 
   MCInst TmpInst;
-  MCInstLowering.Lower(MI, TmpInst);
+  if (MCInstLowering.Lower(MI, TmpInst))
+    EmitAndCountInstruction(MCInstBuilder(X86::REX_PREFIX));
 
   // Stackmap shadows cannot include branch targets, so we can count the bytes
   // in a call towards the shadow, but must ensure that the no thread returns
   // in to the stackmap shadow.  The only way to achieve this is if the call
   // is at the end of the shadow.
-  if (MI->isCall()) {
+  else if (MI->isCall()) {
     // Count then size of the call towards the shadow
     SMShadowTracker.count(TmpInst, getSubtargetInfo(), CodeEmitter.get());
     // Then flush the shadow so that we fill with nops before the call, not

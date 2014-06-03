@@ -1959,6 +1959,10 @@ def LOCK_PREFIX : I<0xF0, RawFrm, (outs),  (ins), "lock", []>;
 def REX64_PREFIX : I<0x48, RawFrm, (outs),  (ins), "rex64", []>,
                      Requires<[In64BitMode]>;
 
+// Rex instruction prefix
+def REX_PREFIX : I<0x40, RawFrm, (outs),  (ins), "rex", []>,
+                   Requires<[In64BitMode]>;
+
 // Data16 instruction prefix
 def DATA16_PREFIX : I<0x66, RawFrm, (outs),  (ins), "data16", []>;
 
