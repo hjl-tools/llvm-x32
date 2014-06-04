@@ -8154,13 +8154,14 @@ namespace {
                                          unsigned TLSBaseAddrReg) {
       MachineFunction *MF = I.getParent()->getParent();
       const X86Subtarget &STI = MF->getSubtarget<X86Subtarget>();
-      const bool is64Bit = STI.is64Bit();
+      const bool isLP64 = STI.isTarget64BitLP64();
       const X86InstrInfo *TII = STI.getInstrInfo();
 
       // Insert a Copy from TLSBaseAddrReg to RAX/EAX.
       MachineInstr *Copy =
           BuildMI(*I.getParent(), I, I.getDebugLoc(),
-                  TII->get(TargetOpcode::COPY), is64Bit ? X86::RAX : X86::EAX)
+                  TII->get(TargetOpcode::COPY),
+                  isLP64 ? X86::RAX : X86::EAX)
               .addReg(TLSBaseAddrReg);
 
       // Erase the TLS_base_addr instruction.
@@ -8174,12 +8175,12 @@ namespace {
     MachineInstr *SetRegister(MachineInstr &I, unsigned *TLSBaseAddrReg) {
       MachineFunction *MF = I.getParent()->getParent();
       const X86Subtarget &STI = MF->getSubtarget<X86Subtarget>();
-      const bool is64Bit = STI.is64Bit();
+      const bool isLP64 = STI.isTarget64BitLP64();
       const X86InstrInfo *TII = STI.getInstrInfo();
 
       // Create a virtual register for the TLS base address.
       MachineRegisterInfo &RegInfo = MF->getRegInfo();
-      *TLSBaseAddrReg = RegInfo.createVirtualRegister(is64Bit
+      *TLSBaseAddrReg = RegInfo.createVirtualRegister(isLP64
                                                       ? &X86::GR64RegClass
                                                       : &X86::GR32RegClass);
 
@@ -8188,7 +8189,7 @@ namespace {
       MachineInstr *Copy =
           BuildMI(*I.getParent(), Next, I.getDebugLoc(),
                   TII->get(TargetOpcode::COPY), *TLSBaseAddrReg)
-              .addReg(is64Bit ? X86::RAX : X86::EAX);
+              .addReg(isLP64 ? X86::RAX : X86::EAX);
 
       return Copy;
     }
