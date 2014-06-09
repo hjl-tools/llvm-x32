@@ -1,10 +1,11 @@
 ; RUN: llc < %s -march=x86-64 -relocation-model=static -mtriple=x86_64-unknown-linux-gnu -asm-verbose=0 | FileCheck %s
+; RUN: llc < %s -march=x86-64 -relocation-model=static -mtriple=x86_64-unknown-linux-gnux32 -asm-verbose=0 | FileCheck %s
 
 ; The inner loop should require only one add (and no leas either).
 ; rdar://8100380
 
 ; CHECK:      BB0_2:
-; CHECK-NEXT:   movb    $0, flags(%rcx)
+; CHECK-NEXT:   movb    $0, flags(%{{r|e}}cx)
 ; CHECK-NEXT:   addq    %rax, %rcx
 ; CHECK-NEXT:   cmpq    $8192, %rcx
 ; CHECK-NEXT:   jl

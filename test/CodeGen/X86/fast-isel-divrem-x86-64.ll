@@ -1,4 +1,5 @@
 ; RUN: llc -mtriple=x86_64-none-linux -fast-isel -fast-isel-abort=1 -verify-machineinstrs < %s | FileCheck %s
+; RUN: llc -mtriple=x86_64-none-linux-gnux32 -fast-isel -fast-isel-abort=1 -verify-machineinstrs < %s | FileCheck %s
 
 define i64 @test_sdiv64(i64 %dividend, i64 %divisor) nounwind {
 entry:
