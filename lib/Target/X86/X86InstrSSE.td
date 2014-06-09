@@ -4615,7 +4615,7 @@ def PMOVMSKBrr : PDI<0xD7, MRMSrcReg, (outs GR32orGR64:$dst), (ins VR128:$src),
 
 let ExeDomain = SSEPackedInt, SchedRW = [WriteStore] in {
 
-let Uses = [EDI], Predicates = [HasAVX,Not64BitMode] in
+let Uses = [EDI], Predicates = [HasAVX,NotLP64] in
 def VMASKMOVDQU : VPDI<0xF7, MRMSrcReg, (outs),
            (ins VR128:$src, VR128:$mask),
            "maskmovdqu\t{$mask, $src|$src, $mask}",
@@ -4628,7 +4628,7 @@ def VMASKMOVDQU64 : VPDI<0xF7, MRMSrcReg, (outs),
            [(int_x86_sse2_maskmov_dqu VR128:$src, VR128:$mask, RDI)],
            IIC_SSE_MASKMOV>, VEX;
 
-let Uses = [EDI], Predicates = [UseSSE2,Not64BitMode] in
+let Uses = [EDI], Predicates = [UseSSE2,NotLP64] in
 def MASKMOVDQU : PDI<0xF7, MRMSrcReg, (outs), (ins VR128:$src, VR128:$mask),
            "maskmovdqu\t{$mask, $src|$src, $mask}",
            [(int_x86_sse2_maskmov_dqu VR128:$src, VR128:$mask, EDI)],
