@@ -8127,6 +8127,7 @@ namespace {
         switch (I->getOpcode()) {
           case X86::TLS_base_addr32:
           case X86::TLS_base_addr64:
+          case X86::TLS_base_addrX32:
             if (TLSBaseAddrReg)
               I = ReplaceTLSBaseAddrCall(*I, TLSBaseAddrReg);
             else

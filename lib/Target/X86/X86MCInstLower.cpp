@@ -693,26 +693,32 @@ ReSimplify:
 void X86AsmPrinter::LowerTlsAddr(X86MCInstLower &MCInstLowering,
                                  const MachineInstr &MI) {
 
-  bool is64Bits = MI.getOpcode() == X86::TLS_addr64 ||
-                  MI.getOpcode() == X86::TLS_base_addr64;
+  bool isLP64 = MI.getOpcode() == X86::TLS_addr64 ||
+                MI.getOpcode() == X86::TLS_base_addr64;
+  bool isX32 = MI.getOpcode() == X86::TLS_addrX32 ||
+               MI.getOpcode() == X86::TLS_base_addrX32;
+  bool is64Bits = isLP64 || isX32;
 
-  bool needsPadding = MI.getOpcode() == X86::TLS_addr64;
+  bool needsPadding1 = MI.getOpcode() == X86::TLS_addr64;
+  bool needsPadding2 = needsPadding1 || MI.getOpcode() == X86::TLS_addrX32;
 
   MCContext &context = OutStreamer->getContext();
 
-  if (needsPadding)
+  if (needsPadding1)
     EmitAndCountInstruction(MCInstBuilder(X86::DATA16_PREFIX));
 
   MCSymbolRefExpr::VariantKind SRVK;
   switch (MI.getOpcode()) {
     case X86::TLS_addr32:
     case X86::TLS_addr64:
+    case X86::TLS_addrX32:
       SRVK = MCSymbolRefExpr::VK_TLSGD;
       break;
     case X86::TLS_base_addr32:
       SRVK = MCSymbolRefExpr::VK_TLSLDM;
       break;
     case X86::TLS_base_addr64:
+    case X86::TLS_base_addrX32:
       SRVK = MCSymbolRefExpr::VK_TLSLD;
       break;
     default:
@@ -750,7 +756,7 @@ void X86AsmPrinter::LowerTlsAddr(X86MCInstLower &MCInstLowering,
   }
   EmitAndCountInstruction(LEA);
 
-  if (needsPadding) {
+  if (needsPadding2) {
     EmitAndCountInstruction(MCInstBuilder(X86::DATA16_PREFIX));
     EmitAndCountInstruction(MCInstBuilder(X86::DATA16_PREFIX));
     EmitAndCountInstruction(MCInstBuilder(X86::REX64_PREFIX));
@@ -763,8 +769,8 @@ void X86AsmPrinter::LowerTlsAddr(X86MCInstLower &MCInstLowering,
                             MCSymbolRefExpr::VK_PLT,
                             context);
 
-  EmitAndCountInstruction(MCInstBuilder(is64Bits ? X86::CALL64pcrel32
-                                                 : X86::CALLpcrel32)
+  EmitAndCountInstruction(MCInstBuilder(isLP64 ? X86::CALL64pcrel32
+                                               : X86::CALLpcrel32)
                             .addExpr(tlsRef));
 }
 
