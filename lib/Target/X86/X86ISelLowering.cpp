@@ -2083,7 +2083,24 @@ X86TargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   SmallVector<CCValAssign, 16> RVLocs;
   CCState CCInfo(CallConv, isVarArg, MF, RVLocs, *DAG.getContext());
-  CCInfo.AnalyzeReturn(Outs, RetCC_X86);
+
+  // X32 psABI requires 32-bit pointer returned in register be zero-
+  // extended to 64 bits.  We use a special AnalyzeReturn to pass
+  // CCValAssign::ZExt to addLoc for x32 psABI when 32-bit pointer
+  // is returned in register.  No need to zero-extend the global TLS
+  // address returned in EAX by "callq __tls_get_addr@PLT".
+  if (Subtarget.isTarget64BitILP32() &&
+      MF.getFunction()->getReturnType()->isPointerTy() &&
+      Outs.size() == 1 &&
+      Outs[0].VT == MVT::i32 &&
+      OutVals[0]->getOpcode() != ISD::GlobalTLSAddress) {
+    static const MCPhysReg RegList[] = { X86::RAX };
+    unsigned Reg = CCInfo.AllocateReg(RegList);
+    assert (Reg != 0 && "Pointer can't be returned in RAX register");
+    CCInfo.addLoc(CCValAssign::getReg(0, MVT::i32, Reg, MVT::i64,
+                                      CCValAssign::ZExt));
+  } else
+    CCInfo.AnalyzeReturn(Outs, RetCC_X86);
 
   SDValue Flag;
   SmallVector<SDValue, 6> RetOps;
@@ -3625,6 +3642,14 @@ bool X86TargetLowering::IsEligibleForTailCallOptimization(
   // then the FP_EXTEND of the call result is not a nop. It's not safe to
   // perform a tailcall optimization here.
   if (CallerF->getReturnType()->isX86_FP80Ty() && !RetTy->isX86_FP80Ty())
+    return false;
+
+  // Since X32 psABI requires that pointer return value must be
+  // zero-extended to 64 bits, disable tail call if callee doesn't
+  // return a pointer.
+  if (Subtarget.isTarget64BitILP32() &&
+      CallerF->getReturnType()->isPointerTy() &&
+      !RetTy->isPointerTy())
     return false;
 
   CallingConv::ID CallerCC = CallerF->getCallingConv();
