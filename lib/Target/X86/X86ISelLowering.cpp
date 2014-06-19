@@ -3080,7 +3080,36 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   if (IsWin64)
     CCInfo.AllocateStack(32, 8);
 
-  CCInfo.AnalyzeCallOperands(Outs, CC_X86);
+  // X32 psABI requires 32-bit pointers passed in registers be zero-
+  // extended to 64 bits.  We use a special AnalyzeCallOperands to
+  // pass CCValAssign::ZExt to addLoc for x32 psABI when a 32-bit
+  // pointer is passed in register.
+  if (Subtarget.isTarget64BitILP32()) {
+    ArgListTy &Args = CLI.getArgs();
+    for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
+      MVT ArgVT = Outs[i].VT;
+      bool NeedZeroExtend = false;
+      if (ArgVT == MVT::i32 &&
+          !Outs[i].Flags.isByVal() &&
+          Args[Outs[i].OrigArgIndex].Ty->isPointerTy()) {
+        static const MCPhysReg RegList[] = {
+           X86::RDI, X86::RSI, X86::RDX, X86::RCX, X86::R8, X86::R9
+        };
+        if (unsigned Reg = CCInfo.AllocateReg(RegList)) {
+          CCInfo.addLoc(CCValAssign::getReg(i, MVT::i32, Reg, MVT::i64,
+                                            CCValAssign::ZExt));
+          NeedZeroExtend = true;
+        }
+      }
+      if (!NeedZeroExtend) {
+        bool Res = CC_X86(i, ArgVT, ArgVT, CCValAssign::Full,
+                          Outs[i].Flags, CCInfo);
+        assert(!Res && "Call operand has unhandled type"); (void)Res;
+      }
+    }
+    assert(ArgLocs.size() == Outs.size());
+  } else
+    CCInfo.AnalyzeCallOperands(Outs, CC_X86);
 
   // Get a count of how many bytes are to be pushed on the stack.
   unsigned NumBytes = CCInfo.getAlignedCallFrameSize();
