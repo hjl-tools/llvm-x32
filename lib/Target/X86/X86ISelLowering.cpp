@@ -2647,7 +2647,40 @@ SDValue X86TargetLowering::LowerFormalArguments(
   if (IsWin64)
     CCInfo.AllocateStack(32, 8);
 
-  CCInfo.AnalyzeFormalArguments(Ins, CC_X86);
+  // X32 psABI requires 32-bit pointers passed in registers be zero-
+  // extended to 64 bits.  We use a special AnalyzeFormalArguments to
+  // pass CCValAssign::ZExt to addLoc for x32 psABI when a 32-bit
+  // pointer is passed in register.
+  if (Subtarget.isTarget64BitILP32()) {
+    Function::const_arg_iterator CurOrigArg = Fn->arg_begin();
+    unsigned CurArgIdx = 0;
+    for (unsigned i = 0, e = Ins.size(); i != e; ++i) {
+      bool NeedZeroExtend = false;
+      MVT ArgVT = Ins[i].VT;
+      if (Ins[i].isOrigArg()) {
+        std::advance(CurOrigArg, Ins[i].getOrigArgIndex() - CurArgIdx);
+        CurArgIdx = Ins[i].getOrigArgIndex();
+        if (ArgVT == MVT::i32 && !Ins[i].Flags.isByVal() &&
+            CurOrigArg->getType()->isPointerTy()) {
+          static const MCPhysReg RegList[] = {
+             X86::RDI, X86::RSI, X86::RDX, X86::RCX, X86::R8, X86::R9
+          };
+          if (unsigned Reg = CCInfo.AllocateReg(RegList)) {
+            CCInfo.addLoc(CCValAssign::getReg(i, MVT::i32, Reg, MVT::i64,
+                                              CCValAssign::ZExt));
+            NeedZeroExtend = true;
+          }
+        }
+      }
+      if (!NeedZeroExtend) {
+        bool Res = CC_X86(i, ArgVT, ArgVT, CCValAssign::Full,
+                          Ins[i].Flags, CCInfo);
+        assert(!Res && "Call operand has unhandled type"); (void)Res;
+      }
+    }
+    assert(ArgLocs.size() == Ins.size());
+  } else
+    CCInfo.AnalyzeFormalArguments(Ins, CC_X86);
 
   unsigned LastVal = ~0U;
   SDValue ArgValue;
