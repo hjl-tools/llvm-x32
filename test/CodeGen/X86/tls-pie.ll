@@ -2,6 +2,8 @@
 ; RUN:   | FileCheck -check-prefix=X32 %s
 ; RUN: llc < %s -march=x86-64 -mcpu=generic -mtriple=x86_64-linux-gnu -relocation-model=pic \
 ; RUN:   | FileCheck -check-prefix=X64 %s
+; RUN: llc < %s -march=x86-64 -mcpu=generic -mtriple=x86_64-linux-gnux32 -relocation-model=pic \
+; RUN:   | FileCheck -check-prefix=X32ABI %s
 
 @i = thread_local global i32 15
 @i2 = external thread_local global i32
@@ -13,6 +15,9 @@ define i32 @f1() {
 ; X64-LABEL: f1:
 ; X64:      movl %fs:i@TPOFF, %eax
 ; X64-NEXT: ret
+; X32ABI-LABEL: f1:
+; X32ABI:      movl %fs:i@TPOFF, %eax
+; X32ABI-NEXT: ret
 
 entry:
 	%tmp1 = load i32, i32* @i
@@ -28,6 +33,9 @@ define i32* @f2() {
 ; X64:      movq %fs:0, %rax
 ; X64-NEXT: leaq i@TPOFF(%rax), %rax
 ; X64-NEXT: ret
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: leal i@TPOFF(%rax), %eax
+; X32ABI-NEXT: ret
 
 entry:
 	ret i32* @i
@@ -51,6 +59,13 @@ define i32 @f3() {
 ; X64:      movq i2@GOTTPOFF(%rip), %rax
 ; X64-NEXT: movl %fs:(%rax), %eax
 ; X64-NEXT: ret
+; X32ABI-LABEL: f3:
+; X32FIXME: We should generate:
+; X32FIXME:      movq i2@GOTTPOFF(%rip), %rax
+; X32FIXME-NEXT: movl %fs:(%rax), %eax
+; X32FIXME-NEXT: ret
+; X32FIXME-NOT: movl i2@GOTTPOFF(%rip), %eax
+; X32FIXME-NOT: movl %fs:(%eax), %eax
 
 entry:
 	%tmp1 = load i32, i32* @i2
@@ -75,6 +90,11 @@ define i32* @f4() {
 ; X64:      movq %fs:0, %rax
 ; X64-NEXT: addq i2@GOTTPOFF(%rip), %rax
 ; X64-NEXT: ret
+; X32ABI-LABEL: f4:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: rex
+; X32ABI-NEXT: addl i2@GOTTPOFF(%rip), %eax
+; X32ABI-NEXT: ret
 
 entry:
 	ret i32* @i2

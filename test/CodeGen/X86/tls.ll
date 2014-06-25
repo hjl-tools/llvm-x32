@@ -1,5 +1,6 @@
 ; RUN: llc < %s -march=x86 -mtriple=i386-linux-gnu | FileCheck -check-prefix=X32_LINUX %s
 ; RUN: llc < %s -march=x86-64 -mtriple=x86_64-linux-gnu | FileCheck -check-prefix=X64_LINUX %s
+; RUN: llc < %s -march=x86-64 -mtriple=x86_64-linux-gnux32 | FileCheck -check-prefix=X32ABI %s
 ; RUN: llc < %s -march=x86 -mtriple=x86-pc-win32 | FileCheck -check-prefix=X32_WIN %s
 ; RUN: llc < %s -march=x86-64 -mtriple=x86_64-pc-win32 | FileCheck -check-prefix=X64_WIN %s
 ; RUN: llc < %s -march=x86 -mtriple=x86-pc-windows-gnu | FileCheck -check-prefix=MINGW32 %s
@@ -22,6 +23,9 @@ define i32 @f1() {
 ; X64_LINUX-LABEL: f1:
 ; X64_LINUX:      movl %fs:i1@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f1:
+; X32ABI:      movl %fs:i1@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f1:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -55,6 +59,10 @@ define i32* @f2() {
 ; X64_LINUX:      movq %fs:0, %rax
 ; X64_LINUX-NEXT: leaq i1@TPOFF(%rax), %rax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f2:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: leal i1@TPOFF(%rax), %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f2:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -87,6 +95,13 @@ define i32 @f3() nounwind {
 ; X64_LINUX:      movq i2@GOTTPOFF(%rip), %rax
 ; X64_LINUX-NEXT: movl %fs:(%rax), %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f3:
+; X32FIXME: We should generate:
+; X32FIXME:      movq i2@GOTTPOFF(%rip), %rax
+; X32FIXME-NEXT: movl %fs:(%rax), %eax
+; X32FIXME-NEXT: ret
+; X32ABI-NOT: movl i2@GOTTPOFF(%rip), %eax
+; X32ABI-NOT: movl %fs:(%eax), %eax
 ; X32_WIN-LABEL: f3:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -120,6 +135,11 @@ define i32* @f4() {
 ; X64_LINUX:      movq %fs:0, %rax
 ; X64_LINUX-NEXT: addq i2@GOTTPOFF(%rip), %rax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f4:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: rex
+; X32ABI-NEXT: addl i2@GOTTPOFF(%rip), %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f4:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -150,6 +170,9 @@ define i32 @f5() nounwind {
 ; X64_LINUX-LABEL: f5:
 ; X64_LINUX:      movl %fs:i3@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f5:
+; X32ABI:      movl %fs:i3@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f5:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -183,6 +206,10 @@ define i32* @f6() {
 ; X64_LINUX:      movq %fs:0, %rax
 ; X64_LINUX-NEXT: leaq i3@TPOFF(%rax), %rax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f6:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: leal i3@TPOFF(%rax), %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f6:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -213,6 +240,9 @@ define i32 @f7() {
 ; X64_LINUX-LABEL: f7:
 ; X64_LINUX:      movl %fs:i4@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f7:
+; X32ABI:      movl %fs:i4@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; MINGW32-LABEL: _f7:
 ; MINGW32: movl __tls_index, %eax
 ; MINGW32-NEXT: movl %fs:44, %ecx
@@ -234,6 +264,10 @@ define i32* @f8() {
 ; X64_LINUX:      movq %fs:0, %rax
 ; X64_LINUX-NEXT: leaq i4@TPOFF(%rax), %rax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f8:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: leal i4@TPOFF(%rax), %eax
+; X32ABI-NEXT: ret
 ; MINGW32-LABEL: _f8:
 ; MINGW32: movl __tls_index, %eax
 ; MINGW32-NEXT: movl %fs:44, %ecx
@@ -252,6 +286,9 @@ define i32 @f9() {
 ; X64_LINUX-LABEL: f9:
 ; X64_LINUX:      movl %fs:i5@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f9:
+; X32ABI:      movl %fs:i5@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; MINGW32-LABEL: _f9:
 ; MINGW32: movl __tls_index, %eax
 ; MINGW32-NEXT: movl %fs:44, %ecx
@@ -273,6 +310,10 @@ define i32* @f10() {
 ; X64_LINUX:      movq %fs:0, %rax
 ; X64_LINUX-NEXT: leaq i5@TPOFF(%rax), %rax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f10:
+; X32ABI:      movl %fs:0, %eax
+; X32ABI-NEXT: leal i5@TPOFF(%rax), %eax
+; X32ABI-NEXT: ret
 ; MINGW32-LABEL: _f10:
 ; MINGW32: movl __tls_index, %eax
 ; MINGW32-NEXT: movl %fs:44, %ecx
@@ -291,6 +332,9 @@ define i16 @f11() {
 ; X64_LINUX-LABEL: f11:
 ; X64_LINUX:      movzwl %fs:s1@TPOFF, %eax
 ; X64_LINUX:      ret
+; X32ABI-LABEL: f11:
+; X32ABI:      movzwl %fs:s1@TPOFF, %eax
+; X32ABI:      ret
 ; X32_WIN-LABEL: f11:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -322,6 +366,9 @@ define i32 @f12() {
 ; X64_LINUX-LABEL: f12:
 ; X64_LINUX:      movswl %fs:s1@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f12:
+; X32ABI:      movswl %fs:s1@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f12:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -355,6 +402,9 @@ define i8 @f13() {
 ; X64_LINUX-LABEL: f13:
 ; X64_LINUX:      movb %fs:b1@TPOFF, %al
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f13:
+; X32ABI:      movb %fs:b1@TPOFF, %al
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f13:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx
@@ -386,6 +436,9 @@ define i32 @f14() {
 ; X64_LINUX-LABEL: f14:
 ; X64_LINUX:      movsbl %fs:b1@TPOFF, %eax
 ; X64_LINUX-NEXT: ret
+; X32ABI-LABEL: f14:
+; X32ABI:      movsbl %fs:b1@TPOFF, %eax
+; X32ABI-NEXT: ret
 ; X32_WIN-LABEL: f14:
 ; X32_WIN:      movl __tls_index, %eax
 ; X32_WIN-NEXT: movl %fs:__tls_array, %ecx

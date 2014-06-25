@@ -1,4 +1,5 @@
 ; RUN: llc < %s -march=x86-64 -mtriple=x86_64-linux-gnu -relocation-model=pic | FileCheck  %s
+; RUN: llc < %s -march=x86-64 -mtriple=x86_64-linux-gnux32 -relocation-model=pic | FileCheck -check-prefix=X32ABI %s
 
 @x = internal thread_local global i32 0, align 4
 @y = internal thread_local global i32 0, align 4
@@ -14,6 +15,10 @@ entry:
 ; CHECK:       leaq x@TLSLD(%rip), %rdi
 ; CHECK-NEXT:  callq __tls_get_addr@PLT
 ; CHECK:       x@DTPOFF
+; X32ABI-LABEL:      get_x:
+; X32ABI:      leaq x@TLSLD(%rip), %rdi
+; X32ABI-NEXT: callq __tls_get_addr@PLT
+; X32ABI:      x@DTPOFF
 }
 
 define i32* @get_y() {
@@ -29,6 +34,9 @@ entry:
 ; CHECK-LABEL:       f:
 ; CHECK-NOT:   __tls_get_addr
 ; CHECK:       je
+; X32ABI-LABEL:      f:
+; X32ABI-NOT:  __tls_get_addr
+; X32ABI:      je
 
 
 if.else:
@@ -40,6 +48,10 @@ if.else:
 ; CHECK:       leaq x@TLSLD(%rip), %rdi
 ; CHECK-NEXT:  callq __tls_get_addr@PLT
 ; CHECK:       x@DTPOFF
+; X32ABI:      # %if.else
+; X32ABI:      leaq x@TLSLD(%rip), %rdi
+; X32ABI-NEXT: callq __tls_get_addr@PLT
+; X32ABI:      x@DTPOFF
 
 
 if.then2:
@@ -51,6 +63,9 @@ if.then2:
 ; CHECK:       # %if.then2
 ; CHECK-NOT:   __tls_get_addr
 ; CHECK:       y@DTPOFF
+; X32ABI:      # %if.then2
+; X32ABI-NOT:  __tls_get_addr
+; X32ABI:      y@DTPOFF
 
 
 return:
