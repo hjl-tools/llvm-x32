@@ -1,5 +1,6 @@
 ; RUN: llc -mtriple=i386-pc-linux-gnu < %s -o - | FileCheck --check-prefix=LINUX-I386 %s
 ; RUN: llc -mtriple=x86_64-pc-linux-gnu < %s -o - | FileCheck --check-prefix=LINUX-X64 %s
+; RUN: llc -mtriple=x86_64-pc-linux-gnux32 < %s -o - | FileCheck --check-prefix=X32ABI %s
 ; RUN: llc -code-model=kernel -mtriple=x86_64-pc-linux-gnu < %s -o - | FileCheck --check-prefix=LINUX-KERNEL-X64 %s
 ; RUN: llc -mtriple=x86_64-apple-darwin < %s -o - | FileCheck --check-prefix=DARWIN-X64 %s
 ; RUN: llc -mtriple=amd64-pc-openbsd < %s -o - | FileCheck --check-prefix=OPENBSD-AMD64 %s
@@ -33,6 +34,10 @@ entry:
 ; LINUX-X64-LABEL: test1a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test1a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test1a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -69,6 +74,10 @@ entry:
 ; LINUX-X64-LABEL: test1b:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test1b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test1b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -110,6 +119,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test1c:
+; X32ABI: movl %fs:24
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test1c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -146,6 +159,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test1d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test1d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -180,6 +197,10 @@ entry:
 ; LINUX-X64-LABEL: test2a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test2a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test2a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -219,6 +240,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test2b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test2b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -252,6 +277,10 @@ entry:
 ; LINUX-X64-LABEL: test2c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test2c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test2c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -291,6 +320,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test2d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test2d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -328,6 +361,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test3a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test3a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -363,6 +400,10 @@ entry:
 ; LINUX-X64-LABEL: test3b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test3b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test3b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -400,6 +441,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test3c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test3c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -436,6 +481,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test3d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test3d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -470,6 +519,10 @@ entry:
 ; LINUX-X64-LABEL: test4a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test4a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test4a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -509,6 +562,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test4b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test4b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -546,6 +603,10 @@ entry:
 ; LINUX-X64-LABEL: test4c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test4c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test4c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -585,6 +646,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test4d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test4d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -622,6 +687,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test5a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test5a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -653,6 +722,10 @@ entry:
 ; LINUX-X64-LABEL: test5b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test5b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test5b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -686,6 +759,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test5c:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test5c:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -718,6 +795,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test5d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test5d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -748,6 +829,10 @@ entry:
 ; LINUX-X64-LABEL: test6a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test6a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test6a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -784,6 +869,10 @@ entry:
 ; LINUX-X64-LABEL: test6b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test6b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test6b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -822,6 +911,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test6c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test6c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -858,6 +951,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test6d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test6d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -893,6 +990,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test7a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test7a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -923,6 +1024,10 @@ entry:
 ; LINUX-X64-LABEL: test7b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test7b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test7b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -955,6 +1060,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test7c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test7c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -986,6 +1095,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test7d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test7d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1015,6 +1128,10 @@ entry:
 ; LINUX-X64-LABEL: test8a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test8a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test8a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1046,6 +1163,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test8b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test8b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1075,6 +1196,10 @@ entry:
 ; LINUX-X64-LABEL: test8c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test8c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test8c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -1106,6 +1231,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test8d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test8d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1134,6 +1263,10 @@ entry:
 ; LINUX-X64-LABEL: test9a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test9a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test9a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1169,6 +1302,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test9b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test9b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1202,6 +1339,10 @@ entry:
 ; LINUX-X64-LABEL: test9c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test9c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test9c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -1237,6 +1378,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test9d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test9d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1269,6 +1414,10 @@ entry:
 ; LINUX-X64-LABEL: test10a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test10a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test10a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1319,6 +1468,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test10b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test10b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1367,6 +1520,10 @@ entry:
 ; LINUX-X64-LABEL: test10c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test10c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test10c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -1417,6 +1574,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test10d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test10d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1465,6 +1626,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test11a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test11a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1498,6 +1663,10 @@ entry:
 ; LINUX-X64-LABEL: test11b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test11b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test11b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1533,6 +1702,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test11c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test11c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1567,6 +1740,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test11d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test11d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1599,6 +1776,10 @@ entry:
 ; LINUX-X64-LABEL: test12a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test12a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test12a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1633,6 +1814,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test12b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test12b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1664,6 +1849,10 @@ entry:
 ; LINUX-X64-LABEL: test12c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test12c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test12c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -1698,6 +1887,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test12d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test12d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1730,6 +1923,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test13a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test13a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1760,6 +1957,10 @@ entry:
 ; LINUX-X64-LABEL: test13b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test13b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test13b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1792,6 +1993,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test13c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test13c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1823,6 +2028,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test13d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test13d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1852,6 +2061,10 @@ entry:
 ; LINUX-X64-LABEL: test14a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test14a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test14a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -1884,6 +2097,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test14b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test14b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -1914,6 +2131,10 @@ entry:
 ; LINUX-X64-LABEL: test14c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test14c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test14c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -1946,6 +2167,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test14d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test14d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -1976,6 +2201,10 @@ entry:
 ; LINUX-X64-LABEL: test15a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test15a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test15a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2013,6 +2242,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test15b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test15b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2048,6 +2281,10 @@ entry:
 ; LINUX-X64-LABEL: test15c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test15c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test15c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -2085,6 +2322,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test15d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test15d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2120,6 +2361,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test16a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test16a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2152,6 +2397,10 @@ entry:
 ; LINUX-X64-LABEL: test16b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test16b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test16b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2186,6 +2435,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test16c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test16c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2219,6 +2472,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test16d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test16d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2249,6 +2506,10 @@ entry:
 ; LINUX-X64-LABEL: test17a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test17a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test17a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2282,6 +2543,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test17b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test17b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2313,6 +2578,10 @@ entry:
 ; LINUX-X64-LABEL: test17c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test17c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test17c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -2346,6 +2615,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test17d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test17d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2376,6 +2649,10 @@ entry:
 ; LINUX-X64-LABEL: test18a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test18a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test18a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2418,6 +2695,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test18b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test18b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2458,6 +2739,10 @@ entry:
 ; LINUX-X64-LABEL: test18c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test18c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test18c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -2500,6 +2785,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test18d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test18d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2539,6 +2828,10 @@ entry:
 ; LINUX-X64-LABEL: test19a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test19a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test19a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2584,6 +2877,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test19b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test19b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2627,6 +2924,10 @@ entry:
 ; LINUX-X64-LABEL: test19c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test19c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test19c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -2674,6 +2975,11 @@ entry:
 ; LINUX-X64: callq __stack_chk_fail
 ; LINUX-X64-NOT: callq __stack_chk_fail
 
+; X32ABI-LABEL: test19d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+; X32ABI-NOT: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test19d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2718,6 +3024,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test20a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test20a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2752,6 +3062,10 @@ entry:
 ; LINUX-X64-LABEL: test20b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test20b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test20b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2788,6 +3102,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test20c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test20c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2823,6 +3141,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test20d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test20d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -2856,6 +3178,10 @@ entry:
 ; LINUX-X64-LABEL: test21a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test21a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test21a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -2893,6 +3219,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test21b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test21b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -2928,6 +3258,10 @@ entry:
 ; LINUX-X64-LABEL: test21c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test21c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test21c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -2965,6 +3299,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test21d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test21d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3000,6 +3338,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test22a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test22a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3031,6 +3373,10 @@ entry:
 ; LINUX-X64-LABEL: test22b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test22b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test22b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3064,6 +3410,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test22c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test22c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3096,6 +3446,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test22d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test22d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3126,6 +3480,10 @@ entry:
 ; LINUX-X64-LABEL: test23a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test23a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test23a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3163,6 +3521,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test23b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test23b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3198,6 +3560,10 @@ entry:
 ; LINUX-X64-LABEL: test23c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test23c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test23c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3235,6 +3601,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test23d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test23d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3269,6 +3639,10 @@ entry:
 ; LINUX-X64-LABEL: test24a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test24a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test24a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3306,6 +3680,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test24b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test24b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3341,6 +3719,10 @@ entry:
 ; LINUX-X64-LABEL: test24c:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test24c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test24c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3378,6 +3760,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test24d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test24d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3413,6 +3799,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test25a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test25a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3443,6 +3833,10 @@ entry:
 ; LINUX-X64-LABEL: test25b:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test25b:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test25b:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3475,6 +3869,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test25c:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test25c:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3505,6 +3903,10 @@ entry:
 ; LINUX-X64-LABEL: test25d:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test25d:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test25d:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3538,6 +3940,10 @@ entry:
 ; LINUX-X64-LABEL: test26:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test26:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test26:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3574,6 +3980,10 @@ bb:
 ; LINUX-X64-LABEL: test27:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test27:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test27:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3632,6 +4042,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test28a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test28a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3661,6 +4075,10 @@ entry:
 ; LINUX-X64-LABEL: test28b:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test28b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test28b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3692,6 +4110,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test29a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test29a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3721,6 +4143,10 @@ entry:
 ; LINUX-X64-LABEL: test29b:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test29b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test29b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
@@ -3752,6 +4178,10 @@ entry:
 ; LINUX-X64-LABEL: test30a:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
+
+; X32ABI-LABEL: test30a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
 
 ; LINUX-KERNEL-X64-LABEL: test30a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
@@ -3791,6 +4221,10 @@ entry:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
 
+; X32ABI-LABEL: test30b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
+
 ; LINUX-KERNEL-X64-LABEL: test30b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
 ; LINUX-KERNEL-X64: callq __stack_chk_fail
@@ -3829,6 +4263,10 @@ entry:
 ; LINUX-X64-NOT: callq __stack_chk_fail
 ; LINUX-X64: .cfi_endproc
 
+; X32ABI-LABEL: test31a:
+; X32ABI-NOT: callq __stack_chk_fail
+; X32ABI: .cfi_endproc
+
 ; LINUX-KERNEL-X64-LABEL: test31a:
 ; LINUX-KERNEL-X64-NOT: callq __stack_chk_fail
 ; LINUX-KERNEL-X64: .cfi_endproc
@@ -3860,6 +4298,10 @@ entry:
 ; LINUX-X64-LABEL: test31b:
 ; LINUX-X64: mov{{l|q}} %fs:
 ; LINUX-X64: callq __stack_chk_fail
+
+; X32ABI-LABEL: test31b:
+; X32ABI: movl %fs:24,
+; X32ABI: callq __stack_chk_fail
 
 ; LINUX-KERNEL-X64-LABEL: test31b:
 ; LINUX-KERNEL-X64: mov{{l|q}} %gs:
