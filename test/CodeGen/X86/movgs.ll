@@ -1,5 +1,6 @@
 ; RUN: llc < %s -march=x86 -mtriple=i386-linux-gnu -mcpu=penryn -mattr=sse4.1 | FileCheck %s --check-prefix=X32
 ; RUN: llc < %s -mtriple=x86_64-linux -mcpu=penryn -mattr=sse4.1 | FileCheck %s --check-prefix=X64
+; RUN: llc < %s -mtriple=x86_64-linux-gnux32 -mcpu=penryn -mattr=sse4.1 | FileCheck %s --check-prefix=X32ABI
 ; RUN: llc < %s -mtriple=x86_64-win32 -mcpu=penryn -mattr=sse4.1 | FileCheck %s --check-prefix=X64
 
 define i32 @test1() nounwind readonly {
@@ -14,6 +15,12 @@ define i32 @test1() nounwind readonly {
 ; X64-NEXT:    movq %gs:320, %rax
 ; X64-NEXT:    movl (%rax), %eax
 ; X64-NEXT:    retq
+;
+; X32ABI-LABEL: test1:
+; X32ABI:       # BB#0: # %entry
+; X32ABI-NEXT:    movl %gs:196, %eax
+; X32ABI-NEXT:    movl (%eax), %eax
+; X32ABI-NEXT:    retq
 entry:
 	%tmp = load i32*, i32* addrspace(256)* getelementptr (i32*, i32* addrspace(256)* inttoptr (i32 72 to i32* addrspace(256)*), i32 31)		; <i32*> [#uses=1]
 	%tmp1 = load i32, i32* %tmp		; <i32> [#uses=1]
@@ -38,6 +45,16 @@ define i64 @test2(void (i8*)* addrspace(256)* %tmp8) nounwind {
 ; X64-NEXT:    xorl %eax, %eax
 ; X64-NEXT:    {{(addq.*%rsp|popq)}}
 ; X64-NEXT:    retq
+;
+; X32ABI-LABEL: test2:
+; X32ABI:       # BB#0: # %entry
+; X32ABI-NEXT:    {{(subl.*%esp|pushq)}}
+; X32ABI-NEXT:    movl %gs:(%edi), %eax
+; X32ABI-NEXT:    xorl %edi, %edi
+; X32ABI-NEXT:    callq *%rax
+; X32ABI-NEXT:    xorl %eax, %eax
+; X32ABI-NEXT:    {{(addl.*%esp|popq)}}
+; X32ABI-NEXT:    retq
 entry:
   %tmp9 = load void (i8*)*, void (i8*)* addrspace(256)* %tmp8, align 8
   tail call void %tmp9(i8* undef) nounwind optsize
@@ -55,6 +72,11 @@ define <2 x i64> @pmovsxwd_1(i64 addrspace(256)* %p) nounwind readonly {
 ; X64:       # BB#0: # %entry
 ; X64-NEXT:    pmovsxwd %gs:(%{{(rcx|rdi)}}), %xmm0
 ; X64-NEXT:    retq
+;
+; X32ABI-LABEL: pmovsxwd_1:
+; X32ABI:       # BB#0: # %entry
+; X32ABI-NEXT:    pmovsxwd %gs:(%edi), %xmm0
+; X32ABI-NEXT:    retq
 entry:
   %0 = load i64, i64 addrspace(256)* %p
   %tmp2 = insertelement <2 x i64> zeroinitializer, i64 %0, i32 0
@@ -83,6 +105,14 @@ define i32 @test_no_cse() nounwind readonly {
 ; X64-NEXT:    movq %fs:320, %rcx
 ; X64-NEXT:    addl (%rcx), %eax
 ; X64-NEXT:    retq
+
+; X32ABI-LABEL: test_no_cse:
+; X32ABI:       # BB#0: # %entry
+; X32ABI-NEXT:    movl %gs:196, %eax
+; X32ABI-NEXT:    movl (%eax), %eax
+; X32ABI-NEXT:    movl %fs:196, %ecx
+; X32ABI-NEXT:    addl (%ecx), %eax
+; X32ABI-NEXT:    retq
 entry:
 	%tmp = load i32*, i32* addrspace(256)* getelementptr (i32*, i32* addrspace(256)* inttoptr (i32 72 to i32* addrspace(256)*), i32 31)		; <i32*> [#uses=1]
 	%tmp1 = load i32, i32* %tmp		; <i32> [#uses=1]
