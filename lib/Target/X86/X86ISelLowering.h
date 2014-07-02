@@ -1025,7 +1025,7 @@ namespace llvm {
     }
 
     SDValue LowerCallResult(SDValue Chain, SDValue InFlag,
-                            CallingConv::ID CallConv, bool isVarArg,
+                            CallingConv::ID CallConv, bool isVarArg, Type *,
                             const SmallVectorImpl<ISD::InputArg> &Ins,
                             const SDLoc &dl, SelectionDAG &DAG,
                             SmallVectorImpl<SDValue> &InVals) const;

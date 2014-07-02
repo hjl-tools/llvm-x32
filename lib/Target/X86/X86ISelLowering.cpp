@@ -2294,7 +2294,7 @@ EVT X86TargetLowering::getTypeForExtReturn(LLVMContext &Context, EVT VT,
 ///
 SDValue X86TargetLowering::LowerCallResult(
     SDValue Chain, SDValue InFlag, CallingConv::ID CallConv, bool isVarArg,
-    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
+    Type *RetTy, const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &dl,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
 
   // Assign locations to each value returned by this call.
@@ -2302,7 +2302,23 @@ SDValue X86TargetLowering::LowerCallResult(
   bool Is64Bit = Subtarget.is64Bit();
   CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), RVLocs,
                  *DAG.getContext());
-  CCInfo.AnalyzeCallResult(Ins, RetCC_X86);
+
+  // X32 psABI requires 32-bit pointer returned in register be zero-
+  // extended to 64 bits.  We use a special AnalyzeCallResult to pass
+  // CCValAssign::ZExt to addLoc for x32 psABI when 32-bit pointer
+  // is returned in register.
+  if (Subtarget.isTarget64BitILP32() &&
+      RetTy->isPointerTy() &&
+      Ins.size() == 1 &&
+      Ins[0].VT == MVT::i32) {
+     static const MCPhysReg RegList[] = { X86::RAX };
+     unsigned Reg = CCInfo.AllocateReg(RegList);
+     assert (Reg != 0 && "Pointer can't be returned in RAX register");
+     CCInfo.addLoc(CCValAssign::getReg(0, MVT::i32, Reg, MVT::i64,
+                                       CCValAssign::ZExt));
+
+  } else
+    CCInfo.AnalyzeCallResult(Ins, RetCC_X86);
 
   // Copy all of the result registers out of their specified physreg.
   for (unsigned i = 0, e = RVLocs.size(); i != e; ++i) {
@@ -2325,6 +2341,8 @@ SDValue X86TargetLowering::LowerCallResult(
       CopyVT = MVT::f80;
       RoundAfterCopy = (CopyVT != VA.getLocVT());
     }
+    else if (VA.getLocInfo() == CCValAssign::ZExt)
+      CopyVT = VA.getLocVT();
 
     Chain = DAG.getCopyFromReg(Chain, dl, VA.getLocReg(),
                                CopyVT, InFlag).getValue(1);
@@ -2334,6 +2352,12 @@ SDValue X86TargetLowering::LowerCallResult(
       Val = DAG.getNode(ISD::FP_ROUND, dl, VA.getValVT(), Val,
                         // This truncation won't change the value.
                         DAG.getIntPtrConstant(1, dl));
+    else if (VA.getLocInfo() == CCValAssign::ZExt) {
+      // Insert an assertzext, then truncate to the right size.
+      Val = DAG.getNode(ISD::AssertZext, dl, VA.getLocVT(), Val,
+                        DAG.getValueType(VA.getValVT()));
+      Val = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), Val);
+    }
 
     if (VA.isExtInLoc() && VA.getValVT().getScalarType() == MVT::i1)
       Val = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), Val);
@@ -3438,7 +3462,7 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
 
   // Handle result values, copying them out of physregs into vregs that we
   // return.
-  return LowerCallResult(Chain, InFlag, CallConv, isVarArg,
+  return LowerCallResult(Chain, InFlag, CallConv, isVarArg, CLI.RetTy,
                          Ins, dl, DAG, InVals);
 }
 
