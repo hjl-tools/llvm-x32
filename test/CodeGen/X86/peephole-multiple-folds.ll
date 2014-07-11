@@ -1,4 +1,5 @@
 ; RUN: llc -march=x86-64 -mcpu=core-avx2 < %s | FileCheck %s
+; RUN: llc -mtriple=x86_64-linux-gnux32 -mcpu=core-avx2 < %s | FileCheck %s
 ;
 ; Test multiple peephole-time folds in a single basic block.
 ; <rdar://problem/16478629>
@@ -9,8 +10,8 @@ entry:
 
 loopbody:
 ; CHECK: test_peephole_multi_fold:
-; CHECK: vfmadd231ps ({{%rdi|%rcx}}),
-; CHECK: vfmadd231ps ({{%rsi|%rdx}}),
+; CHECK: vfmadd231ps (%{{r|e}}{{di|cx}}),
+; CHECK: vfmadd231ps (%{{r|e}}{{si|dx}}),
   %vsum1 = phi <8 x float> [ %vsum1.next, %loopbody ], [ zeroinitializer, %entry ]
   %vsum2 = phi <8 x float> [ %vsum2.next, %loopbody ], [ zeroinitializer, %entry ]
   %m1 = load <8 x float>, <8 x float>* %p1, align 1
