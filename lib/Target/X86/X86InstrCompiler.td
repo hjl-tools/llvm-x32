@@ -382,13 +382,16 @@ let SchedRW = [WriteMicrocoded] in {
 let Defs = [ECX,EDI,ESI], Uses = [ECX,EDI,ESI], isCodeGenOnly = 1 in {
 def REP_MOVSB_32 : I<0xA4, RawFrm, (outs), (ins), "{rep;movsb|rep movsb}",
                     [(X86rep_movs i8)], IIC_REP_MOVS>, REP,
-                   Requires<[Not64BitMode]>;
+                   Requires<[NotLP64]>;
 def REP_MOVSW_32 : I<0xA5, RawFrm, (outs), (ins), "{rep;movsw|rep movsw}",
                     [(X86rep_movs i16)], IIC_REP_MOVS>, REP, OpSize16,
-                   Requires<[Not64BitMode]>;
+                   Requires<[NotLP64]>;
 def REP_MOVSD_32 : I<0xA5, RawFrm, (outs), (ins), "{rep;movsl|rep movsd}",
                     [(X86rep_movs i32)], IIC_REP_MOVS>, REP, OpSize32,
-                   Requires<[Not64BitMode]>;
+                   Requires<[NotLP64]>;
+def REP_MOVSQ_32 : RI<0xA5, RawFrm, (outs), (ins), "{rep;movsq|rep movsq}",
+                    [(X86rep_movs i64)], IIC_REP_MOVS>, REP,
+                   Requires<[Is64BitILP32]>;
 }
 
 let Defs = [RCX,RDI,RSI], Uses = [RCX,RDI,RSI], isCodeGenOnly = 1 in {
