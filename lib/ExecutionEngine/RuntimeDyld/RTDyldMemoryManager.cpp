@@ -227,19 +227,19 @@ RTDyldMemoryManager::getSymbolAddressInProcess(const std::string &Name) {
   // not inlined, and hiding their real definitions in a separate archive file
   // that the dynamic linker can't see. For more info, search for
   // 'libc_nonshared.a' on Google, or read http://llvm.org/PR274.
-  if (Name == "stat") return (uint64_t)&stat;
-  if (Name == "fstat") return (uint64_t)&fstat;
-  if (Name == "lstat") return (uint64_t)&lstat;
-  if (Name == "stat64") return (uint64_t)&stat64;
-  if (Name == "fstat64") return (uint64_t)&fstat64;
-  if (Name == "lstat64") return (uint64_t)&lstat64;
-  if (Name == "atexit") return (uint64_t)&atexit;
-  if (Name == "mknod") return (uint64_t)&mknod;
+  if (Name == "stat") return (uint64_t)(uintptr_t)&stat;
+  if (Name == "fstat") return (uint64_t)(uintptr_t)&fstat;
+  if (Name == "lstat") return (uint64_t)(uintptr_t)&lstat;
+  if (Name == "stat64") return (uint64_t)(uintptr_t)&stat64;
+  if (Name == "fstat64") return (uint64_t)(uintptr_t)&fstat64;
+  if (Name == "lstat64") return (uint64_t)(uintptr_t)&lstat64;
+  if (Name == "atexit") return (uint64_t)(uintptr_t)&atexit;
+  if (Name == "mknod") return (uint64_t)(uintptr_t)&mknod;
 
 #if defined(__i386__) || defined(__x86_64__)
   // __morestack lives in libgcc, a static library.
   if (&__morestack && Name == "__morestack")
-    return (uint64_t)&__morestack;
+    return (uint64_t)(uintptr_t)&__morestack;
 #endif
 #endif // __linux__ && __GLIBC__
   
@@ -260,7 +260,7 @@ RTDyldMemoryManager::getSymbolAddressInProcess(const std::string &Name) {
   // (and register wrong callee's dtors with atexit(3)).
   // We expect ExecutionEngine::runStaticConstructorsDestructors()
   // is called before ExecutionEngine::runFunctionAsMain() is called.
-  if (Name == "__main") return (uint64_t)&jit_noop;
+  if (Name == "__main") return (uint64_t)(intptr_t)&jit_noop;
 
   const char *NameStr = Name.c_str();
 
@@ -271,7 +271,7 @@ RTDyldMemoryManager::getSymbolAddressInProcess(const std::string &Name) {
     ++NameStr;
 #endif
 
-  return (uint64_t)sys::DynamicLibrary::SearchForAddressOfSymbol(NameStr);
+  return (uint64_t)(uintptr_t)sys::DynamicLibrary::SearchForAddressOfSymbol(NameStr);
 }
 
 void *RTDyldMemoryManager::getPointerToNamedFunction(const std::string &Name,
