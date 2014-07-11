@@ -2,6 +2,8 @@
 ; RUN: llc < %s -march=x86 -mattr=+mmx,+avx | FileCheck %s --check-prefix=ALL --check-prefix=X86
 ; RUN: llc < %s -march=x86-64 -mattr=+mmx,+ssse3,-avx | FileCheck %s --check-prefix=ALL --check-prefix=X64
 ; RUN: llc < %s -march=x86-64 -mattr=+mmx,+avx | FileCheck %s --check-prefix=ALL --check-prefix=X64
+; RUN: llc < %s -mtriple=x86_64-linux-gnux32 -mattr=+mmx,+ssse3,-avx | FileCheck %s --check-prefix=ALL --check-prefix=X64
+; RUN: llc < %s -mtriple=x86_64-linux-gnux32 -mattr=+mmx,+avx | FileCheck %s --check-prefix=ALL --check-prefix=X64
 
 declare x86_mmx @llvm.x86.ssse3.phadd.w(x86_mmx, x86_mmx) nounwind readnone
 
