@@ -1,4 +1,5 @@
 ; RUN: llc < %s -mcpu=generic -march=x86-64 | FileCheck %s
+; RUN: llc < %s -mcpu=generic -mtriple=x86_64-linux-gnux32 | FileCheck %s
 
 ; Optimize away zext-inreg and sext-inreg on the loop induction
 ; variable using trip-count information.
@@ -174,7 +175,7 @@ return:
 
 ; CHECK-LABEL: another_count_down
 ; CHECK-NOT: {{and|movz|sar|shl}}
-; CHECK: addq $-8,
+; CHECK: add{{l|q}} $-8,
 ; CHECK-NOT: {{and|movz|sar|shl}}
 ; CHECK: jne
 define void @another_count_down(double* %d, i64 %n) nounwind {
@@ -242,7 +243,7 @@ return:
 
 ; CHECK-LABEL: another_count_down_signed
 ; CHECK-NOT: {{and|movz|sar|shl}}
-; CHECK: decq
+; CHECK: {{dec|inc}}q
 ; CHECK-NOT: {{and|movz|sar|shl}}
 ; CHECK: jne
 define void @another_count_down_signed(double* %d, i64 %n) nounwind {
