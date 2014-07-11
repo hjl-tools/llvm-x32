@@ -67,24 +67,24 @@ private:
   bool HasError;
 
   RelocToApply visitELF(uint32_t RelocType, RelocationRef R, uint64_t Value) {
-    if (ObjToVisit.getBytesInAddress() == 8) { // 64-bit object file
+    if (ObjToVisit.getArch() == Triple::x86_64) {
+      switch (RelocType) {
+      case llvm::ELF::R_X86_64_NONE:
+        return visitELF_X86_64_NONE(R);
+      case llvm::ELF::R_X86_64_64:
+        return visitELF_X86_64_64(R, Value);
+      case llvm::ELF::R_X86_64_PC32:
+        return visitELF_X86_64_PC32(R, Value);
+      case llvm::ELF::R_X86_64_32:
+        return visitELF_X86_64_32(R, Value);
+      case llvm::ELF::R_X86_64_32S:
+        return visitELF_X86_64_32S(R, Value);
+      default:
+        HasError = true;
+        return RelocToApply();
+      }
+    } else if (ObjToVisit.getBytesInAddress() == 8) { // 64-bit object file
       switch (ObjToVisit.getArch()) {
-      case Triple::x86_64:
-        switch (RelocType) {
-        case llvm::ELF::R_X86_64_NONE:
-          return visitELF_X86_64_NONE(R);
-        case llvm::ELF::R_X86_64_64:
-          return visitELF_X86_64_64(R, Value);
-        case llvm::ELF::R_X86_64_PC32:
-          return visitELF_X86_64_PC32(R, Value);
-        case llvm::ELF::R_X86_64_32:
-          return visitELF_X86_64_32(R, Value);
-        case llvm::ELF::R_X86_64_32S:
-          return visitELF_X86_64_32S(R, Value);
-        default:
-          HasError = true;
-          return RelocToApply();
-        }
       case Triple::aarch64:
         switch (RelocType) {
         case llvm::ELF::R_AARCH64_ABS32:
