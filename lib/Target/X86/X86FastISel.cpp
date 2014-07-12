@@ -3628,10 +3628,12 @@ unsigned X86FastISel::X86MaterializeGV(const GlobalValue *GV, MVT VT) {
 
     unsigned ResultReg = createResultReg(TLI.getRegClassFor(VT));
     if (TM.getRelocationModel() == Reloc::Static &&
-        TLI.getPointerTy(DL) == MVT::i64) {
-      // The displacement code could be more than 32 bits away so we need to use
-      // an instruction with a 64 bit immediate
-      BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(X86::MOV64ri),
+        Subtarget->is64Bit()) {
+      // The displacement code could be more than 31 bits away so we need to use
+      // an instruction with a 64/32 bit immediate
+      unsigned Opc = TLI.getPointerTy(DL) == MVT::i64
+                     ? X86::MOV64ri : X86::MOV32ri;
+      BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(Opc),
               ResultReg)
         .addGlobalAddress(GV);
     } else {
