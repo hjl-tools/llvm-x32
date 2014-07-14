@@ -3408,6 +3408,11 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // through a register, since the call instruction's 32-bit
     // pc-relative offset may not be large enough to hold the whole
     // address.
+    if (Subtarget.isTarget64BitILP32() &&
+       Callee->getValueType(0) == MVT::i32) {
+      // Zero-extend the 32-bit indirect address into a 64-bit register
+      Callee = DAG.getNode(ISD::ZERO_EXTEND, dl, MVT::i64, Callee);
+    }
   } else if (Callee->getOpcode() == ISD::GlobalAddress) {
     // If the callee is a GlobalAddress node (quite common, every direct call
     // is) turn it into a TargetGlobalAddress node so that legalize doesn't hack
