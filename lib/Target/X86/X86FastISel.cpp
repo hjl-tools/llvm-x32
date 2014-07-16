@@ -3114,7 +3114,37 @@ bool X86FastISel::fastLowerCall(CallLoweringInfo &CLI) {
   if (IsWin64)
     CCInfo.AllocateStack(32, 8);
 
-  CCInfo.AnalyzeCallOperands(OutVTs, OutFlags, CC_X86);
+  // X32 psABI requires 32-bit pointers passed in registers be zero-
+  // extended to 64 bits.  We use a special AnalyzeCallOperands to
+  // pass CCValAssign::ZExt to addLoc for x32 psABI when a 32-bit
+  // pointer is passed in register.
+  if (Subtarget->isTarget64BitILP32()) {
+    auto &Args = CLI.getArgs();
+    for (unsigned i = 0, e = OutVTs.size(); i != e; ++i) {
+      auto ArgVT = OutVTs[i];
+      bool NeedZeroExtend = false;
+      // FIXME: Is this the correc way to check if the Ith output argument
+      // is a pointer?
+      if (ArgVT == MVT::i32 && !OutFlags[i].isByVal() &&
+          Args[i].Ty->isPointerTy()) {
+        static const MCPhysReg RegList[] = {
+           X86::RDI, X86::RSI, X86::RDX, X86::RCX, X86::R8, X86::R9
+        };
+        if (unsigned Reg = CCInfo.AllocateReg(RegList)) {
+          CCInfo.addLoc(CCValAssign::getReg(i, MVT::i32, Reg, MVT::i64,
+                                            CCValAssign::ZExt));
+          NeedZeroExtend = true;
+        }
+      }
+      if (!NeedZeroExtend) {
+        bool Res = CC_X86(i, ArgVT, ArgVT, CCValAssign::Full,
+                          OutFlags[i], CCInfo);
+        assert(!Res && "Call operand has unhandled type"); (void)Res;
+      }
+    }
+    assert(ArgLocs.size() == OutVTs.size());
+  } else
+    CCInfo.AnalyzeCallOperands(OutVTs, OutFlags, CC_X86);
 
   // Get a count of how many bytes are to be pushed on the stack.
   unsigned NumBytes = CCInfo.getAlignedCallFrameSize();
@@ -3166,9 +3196,24 @@ bool X86FastISel::fastLowerCall(CallLoweringInfo &CLI) {
           return false;
       }
 
-      bool Emitted = X86FastEmitExtend(ISD::ZERO_EXTEND, VA.getLocVT(), ArgReg,
-                                       ArgVT, ArgReg);
-      assert(Emitted && "Failed to emit a zext!"); (void)Emitted;
+      if (ArgVT == MVT::i32) {
+        assert(VA.getLocVT() == MVT::i64
+               && "Unexpected i32 zext to target type");
+        unsigned ArgReg32 = createResultReg(&X86::GR32RegClass);
+        BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc,
+                TII.get(X86::MOV32rr), ArgReg32).addReg(ArgReg);
+
+        ArgReg = createResultReg(&X86::GR64RegClass);
+        BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc,
+                TII.get(TargetOpcode::SUBREG_TO_REG), ArgReg)
+          .addImm(0).addReg(ArgReg32).addImm(X86::sub_32bit);
+      }
+      else {
+        bool Emitted = X86FastEmitExtend(ISD::ZERO_EXTEND, VA.getLocVT(), ArgReg,
+                                         ArgVT, ArgReg);
+        assert(Emitted && "Failed to emit a zext!"); (void)Emitted;
+      }
+
       ArgVT = VA.getLocVT();
       break;
     }
