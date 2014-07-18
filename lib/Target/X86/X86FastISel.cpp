@@ -1182,9 +1182,29 @@ bool X86FastISel::X86SelectRet(const Instruction *I) {
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ValLocs;
     CCState CCInfo(CC, F.isVarArg(), *FuncInfo.MF, ValLocs, I->getContext());
-    CCInfo.AnalyzeReturn(Outs, RetCC_X86);
 
     const Value *RV = Ret->getOperand(0);
+
+    // X32 psABI requires 32-bit pointer returned in register be zero-
+    // extended to 64 bits.  We use a special AnalyzeReturn to pass
+    // CCValAssign::ZExt to addLoc for x32 psABI when 32-bit pointer
+    // is returned in register.  No need to zero-extend the global TLS
+    // address returned in EAX by "callq __tls_get_addr@PLT".
+    if (Subtarget->isTarget64BitILP32() &&
+        F.getReturnType()->isPointerTy() &&
+        Outs.size() == 1 &&
+        Outs[0].VT == MVT::i32) {
+      const GlobalVariable *GV = dyn_cast<GlobalVariable>(RV);
+      if (GV == nullptr || !GV->isThreadLocal()) {
+        static const MCPhysReg RegList[] = { X86::RAX };
+        unsigned Reg = CCInfo.AllocateReg(RegList);
+        assert (Reg != 0 && "Pointer can't be returned in RAX register");
+        CCInfo.addLoc(CCValAssign::getReg(0, MVT::i32, Reg, MVT::i64,
+                                          CCValAssign::ZExt));
+      }
+    } else
+      CCInfo.AnalyzeReturn(Outs, RetCC_X86);
+
     unsigned Reg = getRegForValue(RV);
     if (Reg == 0)
       return false;
