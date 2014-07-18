@@ -3363,6 +3363,17 @@ bool X86FastISel::fastLowerCall(CallLoweringInfo &CLI) {
   if (CalleeOp) {
     // Register-indirect call.
     unsigned CallOpc = Is64Bit ? X86::CALL64r : X86::CALL32r;
+    if (Subtarget->isTarget64BitILP32() &&
+        MRI.getRegClass(CalleeOp)->getSize() == 4) {
+      // Zero-extend 32-bit register to 64 bits for x32.
+      unsigned CalleeOp32 = createResultReg(&X86::GR32RegClass);
+      BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc,
+              TII.get(X86::MOV32rr), CalleeOp32).addReg(CalleeOp);
+      CalleeOp = createResultReg(&X86::GR64RegClass);
+      BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc,
+              TII.get(TargetOpcode::SUBREG_TO_REG), CalleeOp)
+        .addImm(0).addReg(CalleeOp32).addImm(X86::sub_32bit);
+    }
     MIB = BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc, TII.get(CallOpc))
       .addReg(CalleeOp);
   } else {
