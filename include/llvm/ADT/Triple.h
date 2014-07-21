@@ -222,6 +222,9 @@ private:
   /// The object format type.
   ObjectFormatType ObjectFormat;
 
+  /// The software pointer size.
+  unsigned int PointerSize;
+
 public:
   /// @name Constructors
   /// @{
@@ -291,6 +294,9 @@ public:
 
   /// getFormat - Get the object format for this triple.
   ObjectFormatType getObjectFormat() const { return ObjectFormat; }
+
+  /// getPointerSize - Get the software pointer size of this triple.
+  unsigned getPointerSize() const { return PointerSize; }
 
   /// getOSVersion - Parse the version number from the OS name component of the
   /// triple, if present.
@@ -637,6 +643,12 @@ public:
   /// setOSAndEnvironmentName - Set the operating system and optional
   /// environment components with a single string.
   void setOSAndEnvironmentName(StringRef Str);
+
+  /// setPointerSize - Set the software pointer size.
+  void setPointerSize(unsigned int Size);
+
+  /// setPointerSize - Set the software pointer size.
+  void setPointerSize(StringRef Str);
 
   /// @}
   /// @name Helpers to build variants of a particular triple.

@@ -90,6 +90,11 @@ OptLevel("O",
 static cl::opt<std::string>
 TargetTriple("mtriple", cl::desc("Override target triple for module"));
 
+static cl::opt<std::string>
+MPointerSize("mpointersize",
+       cl::desc("Target pointer size"),
+       cl::value_desc("[16|32|64]"));
+
 static cl::opt<bool> NoVerify("disable-verify", cl::Hidden,
                               cl::desc("Do not verify input module"));
 
@@ -355,6 +360,9 @@ static int compileModule(char **argv, LLVMContext &Context) {
   }
 
   std::string CPUStr = getCPUStr(), FeaturesStr = getFeaturesStr();
+
+  if (!MPointerSize.empty())
+    TheTriple.setPointerSize(MPointerSize);
 
   CodeGenOpt::Level OLvl = CodeGenOpt::Default;
   switch (OptLevel) {

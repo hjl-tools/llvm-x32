@@ -628,6 +628,8 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   llvm_unreachable("unknown architecture");
 }
 
+static unsigned int getDefaultPointerSize(const Triple &T);
+
 /// \brief Construct a triple from the string representation provided.
 ///
 /// This stores the string representation and parses the various pieces into
@@ -655,6 +657,7 @@ Triple::Triple(const Twine &Str)
   }
   if (ObjectFormat == UnknownObjectFormat)
     ObjectFormat = getDefaultFormat(*this);
+  PointerSize = getDefaultPointerSize(*this);
 }
 
 /// \brief Construct a triple from string representations of the architecture,
@@ -671,6 +674,7 @@ Triple::Triple(const Twine &ArchStr, const Twine &VendorStr, const Twine &OSStr)
       OS(parseOS(OSStr.str())),
       Environment(), ObjectFormat(Triple::UnknownObjectFormat) {
   ObjectFormat = getDefaultFormat(*this);
+  PointerSize = getDefaultPointerSize(*this);
 }
 
 /// \brief Construct a triple from string representations of the architecture,
@@ -690,6 +694,7 @@ Triple::Triple(const Twine &ArchStr, const Twine &VendorStr, const Twine &OSStr,
       ObjectFormat(parseFormat(EnvironmentStr.str())) {
   if (ObjectFormat == Triple::UnknownObjectFormat)
     ObjectFormat = getDefaultFormat(*this);
+  PointerSize = getDefaultPointerSize(*this);
 }
 
 std::string Triple::normalize(StringRef Str) {
@@ -1171,6 +1176,41 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
     return 64;
   }
   llvm_unreachable("Invalid architecture value");
+}
+
+static unsigned int getDefaultPointerSize(const Triple &T) {
+  if (T.getArch() == Triple::x86_64 &&
+      (T.getEnvironment() == Triple::GNUX32 || T.getOS() == Triple::NaCl))
+    return 32;
+  return getArchPointerBitWidth(T.getArch());
+}
+
+void Triple::setPointerSize(unsigned int Size) {
+  if (PointerSize == Size)
+    return;
+
+  // Check valid pointer size.
+  if (getArch() == x86_64 && getOS() == Linux &&
+      (getEnvironment() == GNUX32 || getEnvironment() == GNU)) {
+    if (Size == 64) {
+      PointerSize = Size;
+      setEnvironment(Triple::GNU);
+      return;
+    } else if (Size == 32) {
+      PointerSize = Size;
+      setEnvironment(Triple::GNUX32);
+      return;
+    }
+  }
+ llvm_unreachable("Invalid pointer size");
+}
+
+void Triple::setPointerSize(StringRef SizeStr) {
+  setPointerSize(StringSwitch<unsigned int>(SizeStr)
+                  .Case("16", 16)
+                  .Case("32", 32)
+                  .Case("64", 64)
+                  .Default(0));
 }
 
 bool Triple::isArch64Bit() const {
