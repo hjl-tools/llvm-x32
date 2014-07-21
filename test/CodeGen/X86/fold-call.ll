@@ -1,5 +1,5 @@
 ; RUN: llc < %s -march=x86 | FileCheck %s
-; RUN: llc < %s -march=x86-64 | FileCheck %s
+; RUN: llc < %s -march=x86-64 -mpointersize=64 | FileCheck %s
 ; RUN: llc < %s -mtriple=x86_64-gnux32 | FileCheck %s -check-prefix=X32ABI
 
 ; CHECK: test1

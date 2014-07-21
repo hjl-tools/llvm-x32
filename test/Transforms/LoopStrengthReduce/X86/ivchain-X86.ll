@@ -1,5 +1,5 @@
 ; RUN: llc < %s -O3 -march=x86 -mcpu=core2 | FileCheck %s -check-prefix=X32
-; RUN: llc < %s -O3 -march=x86-64 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X64
+; RUN: llc < %s -O3 -march=x86-64 -mpointersize=64 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X64
 ; RUN: llc < %s -O3 -march=x86 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X32
 ; RUN: llc < %s -O3 -mtriple=x86_64-gnux32 -mcpu=core2 -addr-sink-using-gep=1 | FileCheck %s -check-prefix=X32ABI
 

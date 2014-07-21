@@ -1,8 +1,8 @@
 ; RUN: llc < %s -march=x86    -mattr=+sse2,-avx | grep -i EDI
-; RUN: llc < %s -march=x86-64 -mattr=+sse2,-avx | grep -i RDI
+; RUN: llc < %s -march=x86-64 -mpointersize=64 -mattr=+sse2,-avx | grep -i RDI
 ; RUN: llc < %s -mtriple=x86_64-gnux32 -mattr=+sse2,-avx | grep -i EDI
 ; RUN: llc < %s -march=x86    -mattr=+avx | grep -i EDI
-; RUN: llc < %s -march=x86-64 -mattr=+avx | grep -i RDI
+; RUN: llc < %s -march=x86-64 -mpointersize=64 -mattr=+avx | grep -i RDI
 ; RUN: llc < %s -mtriple=x86_64-gnux32 -mattr=+avx | grep -i EDI
 ; rdar://6573467
 
