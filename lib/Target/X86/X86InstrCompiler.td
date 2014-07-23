@@ -414,15 +414,19 @@ let Defs = [ECX,EDI], isCodeGenOnly = 1 in {
   let Uses = [AL,ECX,EDI] in
   def REP_STOSB_32 : I<0xAA, RawFrm, (outs), (ins), "{rep;stosb|rep stosb}",
                       [(X86rep_stos i8)], IIC_REP_STOS>, REP,
-                     Requires<[Not64BitMode]>;
+                     Requires<[NotLP64]>;
   let Uses = [AX,ECX,EDI] in
   def REP_STOSW_32 : I<0xAB, RawFrm, (outs), (ins), "{rep;stosw|rep stosw}",
                       [(X86rep_stos i16)], IIC_REP_STOS>, REP, OpSize16,
-                     Requires<[Not64BitMode]>;
+                     Requires<[NotLP64]>;
   let Uses = [EAX,ECX,EDI] in
   def REP_STOSD_32 : I<0xAB, RawFrm, (outs), (ins), "{rep;stosl|rep stosd}",
                       [(X86rep_stos i32)], IIC_REP_STOS>, REP, OpSize32,
-                     Requires<[Not64BitMode]>;
+                     Requires<[NotLP64]>;
+  let Uses = [EAX,ECX,EDI] in
+  def REP_STOSQ_32 : RI<0xAB, RawFrm, (outs), (ins), "{rep;stosq|rep stosq}",
+                      [(X86rep_stos i64)], IIC_REP_STOS>, REP,
+                     Requires<[Is64BitILP32]>;
 }
 
 let Defs = [RCX,RDI], isCodeGenOnly = 1 in {
