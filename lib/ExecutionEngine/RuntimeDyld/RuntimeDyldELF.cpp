@@ -1291,7 +1291,7 @@ RuntimeDyldELF::processRelocationRef(
     StubMap::const_iterator i = Stubs.find(Value);
     if (i != Stubs.end()) {
       resolveRelocation(Section, Offset,
-                        (uint64_t)Section.getAddressWithOffset(i->second),
+                        (uint64_t)(uintptr_t)Section.getAddressWithOffset(i->second),
                         RelType, 0);
       DEBUG(dbgs() << " Stub function found\n");
     } else {
@@ -1326,8 +1326,8 @@ RuntimeDyldELF::processRelocationRef(
         addRelocationForSection(REmovk_g0, Value.SectionID);
       }
       resolveRelocation(Section, Offset,
-                        reinterpret_cast<uint64_t>(Section.getAddressWithOffset(
-                            Section.getStubOffset())),
+                        (uint64_t)(uintptr_t)Section.getAddressWithOffset(
+                            Section.getStubOffset()),
                         RelType, 0);
       Section.advanceStubOffset(getMaxStubSize());
     }
@@ -1343,7 +1343,7 @@ RuntimeDyldELF::processRelocationRef(
       if (i != Stubs.end()) {
         resolveRelocation(
             Section, Offset,
-            reinterpret_cast<uint64_t>(Section.getAddressWithOffset(i->second)),
+            (uint64_t)(uintptr_t)Section.getAddressWithOffset(i->second),
             RelType, 0);
         DEBUG(dbgs() << " Stub function found\n");
       } else {
@@ -1359,9 +1359,9 @@ RuntimeDyldELF::processRelocationRef(
         else
           addRelocationForSection(RE, Value.SectionID);
 
-        resolveRelocation(Section, Offset, reinterpret_cast<uint64_t>(
-                                               Section.getAddressWithOffset(
-                                                   Section.getStubOffset())),
+        resolveRelocation(Section, Offset,
+                          (uint64_t)(uintptr_t) Section.getAddressWithOffset(
+                                                   Section.getStubOffset()),
                           RelType, 0);
         Section.advanceStubOffset(getMaxStubSize());
       }
@@ -1532,8 +1532,7 @@ RuntimeDyldELF::processRelocationRef(
         if (i != Stubs.end()) {
           // Symbol function stub already created, just relocate to it
           resolveRelocation(Section, Offset,
-                            reinterpret_cast<uint64_t>(
-                                Section.getAddressWithOffset(i->second)),
+                            (uint64_t)(uintptr_t)Section.getAddressWithOffset(i->second),
                             RelType, 0);
           DEBUG(dbgs() << " Stub function found\n");
         } else {
@@ -1575,9 +1574,8 @@ RuntimeDyldELF::processRelocationRef(
             addRelocationForSection(REl, Value.SectionID);
           }
 
-          resolveRelocation(Section, Offset, reinterpret_cast<uint64_t>(
-                                                 Section.getAddressWithOffset(
-                                                     Section.getStubOffset())),
+          resolveRelocation(Section, Offset, (uint64_t)(uintptr_t)Section.getAddressWithOffset(
+                                                     Section.getStubOffset()),
                             RelType, 0);
           Section.advanceStubOffset(getMaxStubSize());
         }

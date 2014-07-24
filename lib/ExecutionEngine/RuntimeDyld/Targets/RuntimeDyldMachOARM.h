@@ -211,7 +211,7 @@ private:
     }
     RelocationEntry TargetRE(RE.SectionID, RE.Offset, RE.RelType, 0,
                              RE.IsPCRel, RE.Size);
-    resolveRelocation(TargetRE, (uint64_t)Addr);
+    resolveRelocation(TargetRE, (uint64_t)(uintptr_t)Addr);
   }
 
   Expected<relocation_iterator>

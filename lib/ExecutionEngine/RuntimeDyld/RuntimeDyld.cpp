@@ -644,7 +644,7 @@ Error RuntimeDyldImpl::emitCommonSymbols(const ObjectFile &Obj,
       return NameOrErr.takeError();
     if (Align) {
       // This symbol has an alignment requirement.
-      uint64_t AlignOffset = OffsetToAlignment((uint64_t)Addr, Align);
+      uint64_t AlignOffset = OffsetToAlignment((uint64_t)(uintptr_t)Addr, Align);
       Addr += AlignOffset;
       Offset += AlignOffset;
     }

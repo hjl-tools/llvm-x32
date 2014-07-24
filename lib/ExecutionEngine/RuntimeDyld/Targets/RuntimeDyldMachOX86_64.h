@@ -152,7 +152,7 @@ private:
     }
     RelocationEntry TargetRE(RE.SectionID, RE.Offset,
                              MachO::X86_64_RELOC_UNSIGNED, RE.Addend, true, 2);
-    resolveRelocation(TargetRE, (uint64_t)Addr);
+    resolveRelocation(TargetRE, (uint64_t)(uintptr_t)Addr);
   }
 
   Expected<relocation_iterator>
