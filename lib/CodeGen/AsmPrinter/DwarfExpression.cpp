@@ -109,7 +109,8 @@ bool DwarfExpression::AddMachineRegPiece(const TargetRegisterInfo &TRI,
       unsigned RegOffset = TRI.getSubRegIdxOffset(Idx);
       AddReg(Reg, "super-register");
       if (PieceOffsetInBits == RegOffset) {
-        AddOpPiece(Size, RegOffset);
+        if (!isFrameRegister(TRI, MachineReg))
+          AddOpPiece(Size, RegOffset);
       } else {
         // If this is part of a variable in a sub-register at a
         // non-zero offset, we need to manually shift the value into
