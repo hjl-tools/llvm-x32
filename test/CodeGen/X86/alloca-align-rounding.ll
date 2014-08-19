@@ -20,9 +20,11 @@ define void @foo2(i64 %h) {
 ; CHECK-LABEL: foo2
 ; CHECK: andq $-32, %rsp
 ; CHECK: andq $-32, %rax
+; CHECK: leaq -8(%rbp), %rsp
 ; X32ABI-LABEL: foo2
 ; X32ABI: andl $-32, %esp
 ; X32ABI: andl $-32, %eax
+; X32ABI: leal -8(%rbp), %esp
 }
 
 define void @foo3(i64 %h) {

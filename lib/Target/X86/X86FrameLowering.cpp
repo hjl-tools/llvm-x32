@@ -138,8 +138,8 @@ static unsigned getANDriOpcode(bool IsLP64, int64_t Imm) {
   return X86::AND32ri;
 }
 
-static unsigned getLEArOpcode(unsigned IsLP64) {
-  return IsLP64 ? X86::LEA64r : X86::LEA32r;
+static unsigned getLEArOpcode(bool IsLP64, bool Is64Bit) {
+  return IsLP64 ? X86::LEA64r : (Is64Bit ? X86::LEA64_32r : X86::LEA32r);
 }
 
 /// findDeadCallerSavedReg - Return a caller-saved register that isn't live
@@ -348,10 +348,12 @@ MachineInstrBuilder X86FrameLowering::BuildStackAdjustment(
 
   MachineInstrBuilder MI;
   if (UseLEA) {
+    unsigned MachineStackPtr = Uses64BitFramePtr != Is64Bit ?
+               getX86SubSuperRegister(StackPtr, 64, false) : StackPtr;
     MI = addRegOffset(BuildMI(MBB, MBBI, DL,
-                              TII.get(getLEArOpcode(Uses64BitFramePtr)),
+                              TII.get(getLEArOpcode(Uses64BitFramePtr, Is64Bit)),
                               StackPtr),
-                      StackPtr, false, Offset);
+                      MachineStackPtr, false, Offset);
   } else {
     bool IsSub = Offset < 0;
     uint64_t AbsOffset = IsSub ? -Offset : Offset;
@@ -1608,9 +1610,9 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
     // However, we may use this sequence if we have a frame pointer because the
     // effects of the prologue can safely be undone.
     if (LEAAmount != 0) {
-      unsigned Opc = getLEArOpcode(Uses64BitFramePtr);
+      unsigned Opc = getLEArOpcode(Uses64BitFramePtr, Is64Bit);
       addRegOffset(BuildMI(MBB, MBBI, DL, TII.get(Opc), StackPtr),
-                   FramePtr, false, LEAAmount);
+                   MachineFramePtr, false, LEAAmount);
       --MBBI;
     } else {
       unsigned Opc = (Uses64BitFramePtr ? X86::MOV64rr : X86::MOV32rr);
