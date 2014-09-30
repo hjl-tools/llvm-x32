@@ -144,7 +144,7 @@ TEST_F(ExecutionEngineTest, LookupWithMangledAndDemangledSymbol) {
   EXPECT_EQ(reinterpret_cast<uint64_t>(&x),
             RTDyldMemoryManager::getSymbolAddressInProcess("_x"));
 #else
-  EXPECT_EQ(reinterpret_cast<uint64_t>(&_x),
+  EXPECT_EQ((uint64_t)reinterpret_cast<uintptr_t>(&_x),
             RTDyldMemoryManager::getSymbolAddressInProcess("_x"));
 #endif
 }
