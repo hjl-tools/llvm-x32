@@ -8,7 +8,7 @@ declare void @bar(i32* %arg)
 ; CHECK-LABEL: @foo
 define void @foo() {
   %a = alloca i32
-; CHECK: leal {{.*}}, %edi
+; CHECK: leal 4(%rsp), %{{.*}}
   call void @bar(i32* %a)
   ret void
 }
