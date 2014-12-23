@@ -23168,9 +23168,29 @@ static MachineBasicBlock *emitMonitor(MachineInstr &MI, MachineBasicBlock *BB,
                                                        : X86::LEA64r)
                     : X86::LEA32r;
   unsigned MemReg = Subtarget.isTarget64BitLP64() ? X86::RAX : X86::EAX;
+  unsigned Reg64[X86::AddrNumOperands];
+  for (int i = 0; i < X86::AddrNumOperands; ++i)
+    Reg64[i] = 0;
+  if (MemOpc == X86::LEA64_32r) {
+    MachineRegisterInfo &MRI = BB->getParent()->getRegInfo();
+    for (int i = 0; i < X86::AddrNumOperands; ++i) {
+      if (MI.getOperand(i).getType() == MachineOperand::MO_Register) {
+        unsigned Reg = MI.getOperand(i).getReg();
+        if (Reg != 0 && MRI.getRegClass(Reg)->getSize() == 4) {
+          Reg64[i] = MRI.createVirtualRegister(&X86::GR64RegClass);
+          BuildMI(*BB, MI, dl, TII->get(TargetOpcode::SUBREG_TO_REG),
+                     Reg64[i])
+            .addImm(0).addReg(Reg).addImm(X86::sub_32bit);
+        }
+      }
+    }
+  }
   MachineInstrBuilder MIB = BuildMI(*BB, MI, dl, TII->get(MemOpc), MemReg);
   for (int i = 0; i < X86::AddrNumOperands; ++i)
-    MIB.addOperand(MI.getOperand(i));
+    if (Reg64[i] != 0)
+      MIB.addOperand(MachineOperand::CreateReg(Reg64[i], false));
+    else
+      MIB.addOperand(MI.getOperand(i));
 
   unsigned ValOps = X86::AddrNumOperands;
   BuildMI(*BB, MI, dl, TII->get(TargetOpcode::COPY), X86::ECX)
