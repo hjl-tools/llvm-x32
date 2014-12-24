@@ -79,10 +79,7 @@ entry:
 
 ; X32ABI-LABEL: t5:
 ; X32ABI-NOT: call
-; FIXME: This isn't needed since x32 psABI specifies that callers must
-;        zero-extend pointers passed in registers.
-; X32ABI: movl %edi, %eax
-; X32ABI: jmpq *%rax
+; X32ABI: jmpq *%rdi
   tail call void %x() nounwind
   ret void
 }
