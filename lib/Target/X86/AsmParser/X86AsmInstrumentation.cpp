@@ -750,11 +750,18 @@ void X86AddressSanitizer32::InstrumentMOVSImpl(unsigned AccessSize,
 }
 
 class X86AddressSanitizer64 : public X86AddressSanitizer {
+  static const long kShadow64bitOffset = 0x7fff8000;
+  static const long kShadow32bitOffset = 0x20000000;
+  long kShadowOffset;
+
 public:
-  static const long kShadowOffset = 0x7fff8000;
 
   X86AddressSanitizer64(const MCSubtargetInfo *&STI)
-      : X86AddressSanitizer(STI) {}
+      : X86AddressSanitizer(STI) {
+    Triple T(STI->getTargetTriple());
+    kShadowOffset = T.getPointerSize() == 32 ? kShadow32bitOffset
+                                             : kShadow64bitOffset;
+  }
 
   ~X86AddressSanitizer64() override {}
 
