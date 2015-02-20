@@ -516,8 +516,10 @@ bool MemorySanitizer::doInitialization(Module &M) {
     case Triple::Linux:
       switch (TargetTriple.getArch()) {
         case Triple::x86_64:
-          MapParams = Linux_X86_MemoryMapParams.bits64;
-          break;
+          if (TargetTriple.getPointerSize() != 32) {
+            MapParams = Linux_X86_MemoryMapParams.bits64;
+            break;
+          }
         case Triple::x86:
           MapParams = Linux_X86_MemoryMapParams.bits32;
           break;
