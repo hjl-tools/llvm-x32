@@ -996,7 +996,62 @@ EOF
 	echo ${UNAME_MACHINE}-dec-linux-gnu
 	exit ;;
     x86_64:Linux:*:*)
-	echo x86_64-unknown-linux-gnu
+	eval $set_cc_for_build
+	LINUX_MACHINE="x86_64"
+	LINUX_LIBC="gnu"
+	# If there is a compiler, see if it is configured for 64-bit,
+	# 32-bit or x32 objects.
+	if [ "$CC_FOR_BUILD" != 'no_compiler_found' ]; then
+	    if (echo '#ifdef __x86_64__'; echo IS_64BIT_ARCH; echo '#endif') | \
+		(CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		grep IS_64BIT_ARCH >/dev/null
+	    then
+	      if (echo '#ifdef __ILP32__'; echo IS_X32; echo '#endif') | \
+		  (CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		   grep IS_X32 >/dev/null
+	      then
+		LINUX_LIBC=gnux32
+	      fi
+	    else
+	      if (echo '#if defined (__i686__) \
+			    || defined (__pentium4__) \
+			    || defined (__nocona__) \
+			    || defined (__core2__) \
+			    || defined (__corei7__) \
+			    || defined (__nehalem__) \
+			    || defined (__corei7_avx__) \
+			    || defined (__sandybridge__) \
+			    || defined (__core_avx2__) \
+			    || defined (__haswell__) \
+			    || defined (__atom__) \
+			    || defined (__bonnell__) \
+			    || defined (__slm__) \
+			    || defined (__silvermont__) \
+			    || defined (__knl__)'; \
+	          echo IS_I686; echo '#endif') | \
+		  (CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		   grep IS_I686 >/dev/null
+	      then
+		LINUX_MACHINE="i686"
+	      elif (echo '#ifdef __i586__'; echo IS_I586; echo '#endif') | \
+		  (CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		   grep IS_I586 >/dev/null
+	      then
+		LINUX_MACHINE="i586"
+	      elif (echo '#ifdef __i486__'; echo IS_I486; echo '#endif') | \
+		  (CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		   grep IS_I486 >/dev/null
+	      then
+		LINUX_MACHINE="i486"
+	      elif (echo '#ifdef __i386__'; echo IS_I386; echo '#endif') | \
+		  (CCOPTS= $CC_FOR_BUILD -E - 2>/dev/null) | \
+		   grep IS_I386 >/dev/null
+	      then
+		LINUX_MACHINE="i386"
+	      fi
+	    fi
+	fi
+	echo ${LINUX_MACHINE}-unknown-linux-${LINUX_LIBC}
 	exit ;;
     xtensa*:Linux:*:*)
 	echo ${UNAME_MACHINE}-unknown-linux-gnu
