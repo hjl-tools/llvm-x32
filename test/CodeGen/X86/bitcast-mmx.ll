@@ -3,7 +3,7 @@
 define i32 @t0(i64 %x) {
 ; CHECK-LABEL: t0:
 ; CHECK:       # BB#0:{{.*}} %entry
-; CHECK:    movd %[[REG1:[a-z]+]], %mm0
+; CHECK:    movd %r[[REG1:[a-z]+]], %mm0
 ; CHECK-NEXT:    pshufw $238, %mm0, %mm0
 ; CHECK-NEXT:    movd %mm0, %eax
 ; CHECK-NEXT:    retq
@@ -23,7 +23,7 @@ define i64 @t1(i64 %x, i32 %n) {
 ; CHECK-LABEL: t1:
 ; CHECK:       # BB#0:{{.*}} %entry
 ; CHECK:    movd %[[REG2:[a-z]+]], %mm0
-; CHECK-NEXT:    movd %[[REG1]], %mm1
+; CHECK-NEXT:    movd %r[[REG1]], %mm1
 ; CHECK-NEXT:    psllq %mm0, %mm1
 ; CHECK-NEXT:    movd %mm1, %rax
 ; CHECK-NEXT:    retq
@@ -40,7 +40,7 @@ define i64 @t2(i64 %x, i32 %n, i32 %w) {
 ; CHECK:  movd %[[REG4:[a-z]+]], %mm0
 ; CHECK-NEXT:  movd %[[REG6:[a-z0-9]+]], %mm1
 ; CHECK-NEXT:  psllq %mm0, %mm1
-; CHECK-NEXT:  movd %[[REG1]], %mm0
+; CHECK-NEXT:  movd %r[[REG1]], %mm0
 ; CHECK-NEXT:  por %mm1, %mm0
 ; CHECK-NEXT:  movd %mm0, %rax
 ; CHECK-NEXT:  retq
@@ -58,7 +58,7 @@ entry:
 define i64 @t3(<1 x i64>* %y, i32* %n) {
 ; CHECK-LABEL: t3:
 ; CHECK:       # BB#0:{{.*}} %entry
-; CHECK:    movq (%[[REG1]]), %mm0
+; CHECK:    movq (%{{r|e}}[[REG1]]), %mm0
 ; CHECK-NEXT:    psllq (%[[REG3:[a-z]+]]), %mm0
 ; CHECK-NEXT:    movd %mm0, %rax
 ; CHECK-NEXT:    retq
