@@ -4,7 +4,7 @@
 ; Check that llc can overide function attributes target-cpu and target-features
 ; using command line options -mcpu and -mattr.
 
-; CHECK: vpsadbw (%r{{si|dx}}), %ymm{{[0-9]+}}, %ymm{{[0-9]+}}
+; CHECK: vpsadbw (%{{r|e}}{{si|dx}}), %ymm{{[0-9]+}}, %ymm{{[0-9]+}}
 
 define <4 x i64> @foo1(<4 x i64>* %s1, <4 x i64>* %s2) #0 {
 entry:
