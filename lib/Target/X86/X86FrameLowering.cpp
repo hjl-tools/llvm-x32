@@ -2032,7 +2032,11 @@ void X86FrameLowering::determineCalleeSaves(MachineFunction &MF,
 
   // Spill the BasePtr if it's used.
   if (TRI->hasBasePointer(MF)) {
-    SavedRegs.set(TRI->getBaseRegister());
+    const X86Subtarget &STI = MF.getSubtarget<X86Subtarget>();
+    unsigned BasePtr = TRI->getBaseRegister();
+    if (STI.isTarget64BitILP32())
+      BasePtr = getX86SubSuperRegister(BasePtr, 64, false);
+    SavedRegs.set(BasePtr);
 
     // Allocate a spill slot for EBP if we have a base pointer and EH funclets.
     if (MF.getMMI().hasEHFunclets()) {
