@@ -199,6 +199,12 @@ static cl::opt<bool> ClWithComdat("msan-with-comdat",
 static const char *const kMsanModuleCtorName = "msan.module_ctor";
 static const char *const kMsanInitName = "__msan_init";
 
+static cl::opt<bool> ClSplitLayout(
+    "msan-split-layout", cl::desc(
+                             "use experimental memory layout compatible with "
+                             "non-pie and non-aslr execution"),
+    cl::Hidden, cl::init(true));
+
 namespace {
 
 // Memory map parameters used in application-to-shadow address calculation.
@@ -238,6 +244,13 @@ static const MemoryMapParams Linux_X86_64_MemoryMapParams = {
   0,               // ShadowBase (not used)
   0x100000000000,  // OriginBase
 #endif
+};
+
+static const MemoryMapParams Linux_X86_64_Split_MemoryMapParams = {
+  0,               // AndMask (not used)
+  0x500000000000,  // XorMask
+  0,               // ShadowBase (not used)
+  0x100000000000,  // OriginBase
 };
 
 // mips64 Linux
@@ -517,7 +530,8 @@ bool MemorySanitizer::doInitialization(Module &M) {
       switch (TargetTriple.getArch()) {
         case Triple::x86_64:
           if (TargetTriple.getPointerSize() != 32) {
-            MapParams = Linux_X86_MemoryMapParams.bits64;
+            MapParams = ClSplitLayout ? &Linux_X86_64_Split_MemoryMapParams
+                                      : Linux_X86_MemoryMapParams.bits64;
             break;
           }
         case Triple::x86:
