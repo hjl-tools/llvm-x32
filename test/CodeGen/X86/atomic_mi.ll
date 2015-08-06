@@ -209,9 +209,9 @@ define void @add_32r_self(i32* %p) {
 define i32 @add_32r_ret_load(i32* %p, i32 %v) {
 ; X64-LABEL: add_32r_ret_load:
 ; X64-NOT: lock
-; X64:      movl (%rdi), %eax
+; X64:      movl ({{%rdi|%edi}}), %eax
 ; X64-NEXT: addl %eax, %esi
-; X64-NEXT: movl %esi, (%rdi)
+; X64-NEXT: movl %esi, ({{%rdi|%edi}})
 ; X64-NEXT: retq
 ; X32-LABEL: add_32r_ret_load:
 ; X32-NOT: lock
