@@ -60,7 +60,7 @@ define void @f_thunk(i8* %this, ...) {
 ; LINUX: jmpq *{{.*}}  # TAILCALL
 
 ; LINUX-X32-LABEL: f_thunk:
-; LINUX-X32-DAG: movl %edi, {{.*}}
+; LINUX-X32-DAG: movq %rdi, {{.*}}
 ; LINUX-X32-DAG: movq %rsi, {{.*}}
 ; LINUX-X32-DAG: movq %rdx, {{.*}}
 ; LINUX-X32-DAG: movq %rcx, {{.*}}
@@ -84,7 +84,7 @@ define void @f_thunk(i8* %this, ...) {
 ; LINUX-X32-DAG: movaps {{[0-9]*}}(%esp), %xmm5
 ; LINUX-X32-DAG: movaps {{[0-9]*}}(%esp), %xmm6
 ; LINUX-X32-DAG: movaps {{[0-9]*}}(%esp), %xmm7
-; LINUX-X32-DAG: movl {{.*}}, %edi
+; LINUX-X32-DAG: movq {{.*}}, %rdi
 ; LINUX-X32-DAG: movq {{.*}}, %rsi
 ; LINUX-X32-DAG: movq {{.*}}, %rdx
 ; LINUX-X32-DAG: movq {{.*}}, %rcx
@@ -129,8 +129,8 @@ define void @g_thunk(i8* %fptr_i8, ...) {
 ; LINUX: jmpq *%rdi  # TAILCALL
 
 ; LINUX-X32-LABEL: g_thunk:
-; LINUX-X32-DAG: movl %edi, %[[REG:e[abcd]x|ebp|esi|edi|r8|r9|r1[0-5]]]
-; LINUX-X32-DAG: jmpq *%[[REG]]  # TAILCALL
+; LINUX-X32-NOT: movl %edi, %[[REG:e[abcd]x|ebp|esi|edi|r8|r9|r1[0-5]]]
+; LINUX-X32-DAG: jmpq *%rdi  # TAILCALL
 
 ; WINDOWS-LABEL: g_thunk:
 ; WINDOWS-NOT: movq
