@@ -1,5 +1,6 @@
 ; RUN: llc < %s -mtriple=i686-windows | FileCheck %s
 ; RUN: llc < %s -mtriple=x86_64-linux | FileCheck %s -check-prefix=LINUX64
+; RUN: llc < %s -mtriple=x86_64-linux-gnux32 | FileCheck %s -check-prefix=LINUX64
 
 declare void @param1(i32 %a)
 declare i32 @param2_ret(i32 %a, i32 %b)
