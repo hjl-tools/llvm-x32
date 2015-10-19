@@ -255,16 +255,18 @@ Error OrcX86_64_Base::emitIndirectStubsBlock(IndirectStubsInfo &StubsInfo,
   uint64_t PtrOffsetField = static_cast<uint64_t>(NumPages * PageSize - 6)
                             << 16;
   for (unsigned I = 0; I < NumStubs; ++I)
-    Stub[I] = 0xF1C40000000025ff | PtrOffsetField;
+    // Use the `LL' suffix since long int is 32 bits for x32.
+    Stub[I] = 0xF1C40000000025ffLL | PtrOffsetField;
 
   if (auto EC = sys::Memory::protectMappedMemory(
           StubsBlock, sys::Memory::MF_READ | sys::Memory::MF_EXEC))
     return errorCodeToError(EC);
 
   // Initialize all pointers to point at FailureAddress.
-  void **Ptr = reinterpret_cast<void **>(PtrsBlock.base());
+  uint64_t *Ptr = reinterpret_cast<uint64_t *>(PtrsBlock.base());
   for (unsigned I = 0; I < NumStubs; ++I)
-    Ptr[I] = InitialPtrVal;
+    // X32 has 32-bit pointer with indirect branch via a 64-bit slot.
+    Ptr[I] = (uint64_t)(uintptr_t)InitialPtrVal;
 
   StubsInfo = IndirectStubsInfo(NumStubs, std::move(StubsMem));
 
