@@ -7,6 +7,12 @@
 ; RUN: llc -mtriple=x86_64-linux-gnu -mattr=+sahf -pre-RA-sched=fast %s -o - | FileCheck %s -check-prefix=x8664-sahf
 ; RUN: llc -mtriple=x86_64-linux-gnu -mcpu=corei7 %s -o - | FileCheck %s -check-prefix=x8664-sahf
 
+; RUN: llc -mtriple=x86_64-linux-gnux32 %s -o - | FileCheck %s -check-prefix=x8664
+; RUN: llc -mtriple=x86_64-linux-gnux32 -pre-RA-sched=fast %s -o - | FileCheck %s -check-prefix=x8664
+; RUN: llc -mtriple=x86_64-linux-gnux32 -mattr=+sahf %s -o - | FileCheck %s -check-prefix=x8664-sahf
+; RUN: llc -mtriple=x86_64-linux-gnux32 -mattr=+sahf -pre-RA-sched=fast %s -o - | FileCheck %s -check-prefix=x8664-sahf
+; RUN: llc -mtriple=x86_64-linux-gnux32 -mcpu=corei7 %s -o - | FileCheck %s -check-prefix=x8664-sahf
+
 ; TODO: Reenable verify-machineinstr once the if (!AXDead) // FIXME
 ; in X86InstrInfo::copyPhysReg() is resolved.
 
