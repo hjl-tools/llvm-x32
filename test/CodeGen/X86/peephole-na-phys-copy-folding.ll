@@ -1,5 +1,6 @@
 ; RUN: llc -mtriple=i386-linux-gnu %s -o - | FileCheck %s --check-prefix=CHECK --check-prefix=CHECK32
 ; RUN: llc -mtriple=x86_64-linux-gnu -mattr=+sahf %s -o - | FileCheck %s --check-prefix=CHECK --check-prefix=CHECK64
+; RUN: llc -mtriple=x86_64-linux-gnux32 -mattr=+sahf %s -o - | FileCheck %s --check-prefix=CHECK --check-prefix=CHECK64
 
 ; TODO: Reenable verify-machineinstrs once the if (!AXDead) // FIXME in
 ; X86InstrInfo::copyPhysReg() is resolved.
