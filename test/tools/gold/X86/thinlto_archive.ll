@@ -9,7 +9,7 @@
 ; Test importing from archive library via gold, using jobs=1 to ensure
 ; output messages are not interleaved.
 ; RUN: %gold -plugin %llvmshlibdir/LLVMgold.so \
-; RUN:    --plugin-opt=thinlto \
+; RUN:    --map-whole-files --plugin-opt=thinlto \
 ; RUN:    --plugin-opt=-print-imports \
 ; RUN:    --plugin-opt=jobs=1 \
 ; RUN:    -shared %t.o %t.a -o %t4 2>&1 | FileCheck %s

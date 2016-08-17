@@ -2,7 +2,7 @@
 ; RUN: opt -module-summary %p/Inputs/thinlto_internalize.ll -o %t2.o
 
 ; RUN: %gold -m elf_x86_64 -plugin %llvmshlibdir/LLVMgold.so \
-; RUN:     --plugin-opt=thinlto \
+; RUN:     --map-whole-files --plugin-opt=thinlto \
 ; RUN:     --plugin-opt=-import-instr-limit=0 \
 ; RUN:     --plugin-opt=save-temps \
 ; RUN:     -o %t3.o %t2.o %t.o
